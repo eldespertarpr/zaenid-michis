@@ -17,6 +17,9 @@
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <!-- Babel (JSX in browser) -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     body { margin: 0; overscroll-behavior: none; background: #f8fafc; }
@@ -29,6 +32,22 @@
 
   <script type="text/babel">
     const { useState, useEffect } = React;
+
+    // ──────────────────────────────────────────────────────────────
+    // FIREBASE INIT
+    // ──────────────────────────────────────────────────────────────
+    if (!firebase.apps.length) {
+      firebase.initializeApp({
+        apiKey: "AIzaSyCiAQmrzirdICxSxxKjf9xaL7lBhU9hdnk",
+        authDomain: "zaenid-michis.firebaseapp.com",
+        databaseURL: "https://zaenid-michis-default-rtdb.firebaseio.com",
+        projectId: "zaenid-michis",
+        storageBucket: "zaenid-michis.firebasestorage.app",
+        messagingSenderId: "754852396413",
+        appId: "1:754852396413:web:f64fa553126cc01e102014"
+      });
+    }
+    const firebaseDB = firebase.database();
 
     // ──────────────────────────────────────────────────────────────
     // CONSTANTS
@@ -64,15 +83,17 @@
       new Date(iso).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
 
     // ──────────────────────────────────────────────────────────────
-    // STORAGE  →  localStorage (works outside Claude.ai)
+    // STORAGE  →  Firebase Realtime Database (shared across devices)
     // ──────────────────────────────────────────────────────────────
     const db = {
       async get(key) {
-        try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : null; }
-        catch { return null; }
+        try {
+          const snap = await firebaseDB.ref(key).get();
+          return snap.exists() ? snap.val() : null;
+        } catch { return null; }
       },
       async set(key, val) {
-        try { localStorage.setItem(key, JSON.stringify(val)); } catch(e) { console.error(e); }
+        try { await firebaseDB.ref(key).set(val); } catch(e) { console.error(e); }
       },
     };
 
