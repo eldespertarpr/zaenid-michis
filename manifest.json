@@ -1,7 +1,7 @@
 {
   "name": "Zaenid Michis",
-  "short_name": "Zaenid Michis",
-  "description": "Volunteer Task Manager",
+  "short_name": "Michis",
+  "description": "Volunteer task manager for cat care.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
