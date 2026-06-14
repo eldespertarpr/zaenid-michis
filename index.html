@@ -431,10 +431,30 @@
         await save("volunteers",vols);
         await upsertUserRole(updated);
       };
+      const deletePerson=async(vol)=>{
+        const assignedCount=(data.assignments||[]).filter(a=>a.volunteerId===vol.id).length;
+        const roleLinked=vol.uid && roles[vol.uid];
+        const warning=assignedCount>0
+          ? `"${vol.name}" appears in ${assignedCount} assignment${assignedCount===1?"":"s"}. Deleting this person will not delete old assignments, but those old assignments may still show the saved name.`
+          : `Delete "${vol.name}" permanently from People?`;
+        const confirmText=prompt(`${warning}\n\nType DELETE to confirm.`);
+        if(confirmText!=="DELETE") return;
+
+        const vols=data.volunteers.filter(v=>v.id!==vol.id);
+        await save("volunteers",vols);
+
+        if(roleLinked){
+          const nextRoles={...(data.userRoles||{})};
+          delete nextRoles[vol.uid];
+          await save("userRoles",nextRoles);
+        }
+
+        alert("Person deleted from the app profile list. If this person should no longer sign in, also disable or delete their account in Firebase Authentication.");
+      };
       const active=data.volunteers.filter(v=>v.active!==false), inactive=data.volunteers.filter(v=>v.active===false);
       const roleBadge=(role)=><span className={`text-xs px-2 py-0.5 rounded-full font-medium ${role==="coordinator"?"bg-indigo-100 text-indigo-700":"bg-slate-100 text-slate-600"}`}>{role==="coordinator"?"Coordinator":"Volunteer"}</span>;
       if(mode==="form") return <div className="p-4 space-y-4"><BackBar onBack={close} title={editing==="new"?"Add Person":"Edit Person"}/><Card><div className="space-y-3"><Field label="Full Name *" value={form.name||""} onChange={v=>setForm({...form,name:v})}/><Field label="Email *" type="email" value={form.email||""} onChange={v=>setForm({...form,email:v})} placeholder="person@example.com"/><div><Label>Role</Label><select value={form.role||"volunteer"} onChange={e=>setForm({...form,role:e.target.value})} className={inputCls}><option value="volunteer">Volunteer</option><option value="coordinator">Coordinator</option></select></div>{form.uid?<p className="text-xs text-emerald-600">Linked to Firebase Auth user.</p>:<p className="text-xs text-amber-600">This person must sign in once before role rules can be linked to their Firebase UID.</p>}{err&&<div className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-xl">{err}</div>}</div></Card><button onClick={saveVol} className="w-full bg-slate-900 text-white font-semibold py-4 rounded-2xl text-sm">Save Person</button></div>;
-      const PersonCard=({vol,inactiveView=false})=><div key={vol.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4"><div className="flex items-center justify-between"><div className="min-w-0"><div className="font-semibold text-slate-800">{vol.name}</div><div className="text-sm text-slate-400 mt-0.5 break-all">{vol.email||"No email"}</div><div className="mt-2 flex flex-wrap gap-2 items-center">{roleBadge(vol.role||roles[vol.uid]?.role||"volunteer")}{vol.uid?<span className="text-xs text-emerald-600">Linked</span>:<span className="text-xs text-amber-600">Not linked yet</span>}</div></div><div className="flex flex-col items-end gap-1.5 ml-3"><button onClick={()=>openEdit(vol)} className="text-xs text-teal-600 font-medium">Edit</button><button onClick={()=>toggleActive(vol)} className="text-xs text-slate-400">{inactiveView?"Reactivate":"Deactivate"}</button></div></div></div>;
+      const PersonCard=({vol,inactiveView=false})=><div key={vol.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4"><div className="flex items-center justify-between"><div className="min-w-0"><div className="font-semibold text-slate-800">{vol.name}</div><div className="text-sm text-slate-400 mt-0.5 break-all">{vol.email||"No email"}</div><div className="mt-2 flex flex-wrap gap-2 items-center">{roleBadge(vol.role||roles[vol.uid]?.role||"volunteer")}{vol.uid?<span className="text-xs text-emerald-600">Linked</span>:<span className="text-xs text-amber-600">Not linked yet</span>}</div></div><div className="flex flex-col items-end gap-1.5 ml-3"><button onClick={()=>openEdit(vol)} className="text-xs text-teal-600 font-medium">Edit</button><button onClick={()=>toggleActive(vol)} className="text-xs text-slate-400">{inactiveView?"Reactivate":"Deactivate"}</button><button onClick={()=>deletePerson(vol)} className="text-xs text-red-500 font-medium">Delete</button></div></div></div>;
       return <div className="p-4 space-y-4"><div className="flex items-center justify-between"><h2 className="text-base font-bold text-slate-800">People ({active.length})</h2><button onClick={openNew} className="bg-slate-900 text-white text-xs px-4 py-2 rounded-xl font-medium">+ Add</button></div>{active.length===0?<Empty icon="👤" title="No active people yet" subtitle="Add volunteers or coordinators and set their emails."/>:active.map(vol=><PersonCard key={vol.id} vol={vol}/>) }{inactive.length>0&&<Card title="Inactive people">{inactive.map(vol=><PersonCard key={vol.id} vol={vol} inactiveView />)}</Card>}</div>;
     }
 
