@@ -263,8 +263,8 @@
             {tab === "cats" && <CatsTab data={data} save={save} />}
             {tab === "locations" && <LocationsTab data={data} save={save} />}
             {tab === "volunteers" && <VolunteersTab data={data} save={save} />}
-            {tab === "history" && <HistoryTab data={data} />}
-            {tab === "settings" && <SettingsTab user={user} />}
+            {tab === "history" && <HistoryTab data={data} save={save} />}
+            {tab === "settings" && <SettingsTab user={user} data={data} save={save} />}
           </main>
           <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex z-10">
             {TABS.map(t => <button key={t.id} onClick={() => setTab(t.id)} className={`flex-1 py-2 flex flex-col items-center gap-0.5 min-w-0 ${tab === t.id ? "text-teal-600" : "text-slate-400"}`}><span className="text-base leading-none">{t.icon}</span><span className="text-[10px] font-medium leading-none">{t.label}</span></button>)}
@@ -303,8 +303,11 @@
 
       const activeVols = data.volunteers.filter(v => v.active !== false);
       const activeCats = data.cats.filter(c => c.active !== false);
+      const selectedDateAssignments = data.assignments.filter(a => a.date === date).sort((a,b)=>a.shift.localeCompare(b.shift));
       const toggle = (arr, setArr, id) => setArr(arr.includes(id) ? arr.filter(x => x !== id) : [...arr, id]);
       const addSpecial = (t = newSpecial) => { const val = t.trim(); if (val && !specials.includes(val)) setSpecials([...specials, val]); setNewSpecial(""); };
+      const showFlash = (ok, msg) => { setFlash({ ok, msg }); setTimeout(() => setFlash(null), 3000); };
+
       const buildTasks = () => {
         const tasks = [];
         selCats.forEach(catId => {
@@ -317,14 +320,46 @@
         specials.forEach(name => tasks.push({ id: uid(), type: "special", name, completedAt: null }));
         return tasks;
       };
+
       const handleSave = async () => {
-        if (!volId) return setFlash({ ok: false, msg: "Please select a volunteer." });
-        const tasks = buildTasks(); if (!tasks.length) return setFlash({ ok: false, msg: "Add at least one cat, location, or special task." });
+        if (!volId) return showFlash(false, "Please select a volunteer.");
+        const tasks = buildTasks(); if (!tasks.length) return showFlash(false, "Add at least one cat, location, or special task.");
         const vol = data.volunteers.find(v => v.id === volId);
         await save("assignments", [...data.assignments, { id: uid(), date, shift, volunteerId: volId, volunteerName: vol?.name ?? "", tasks, createdAt: new Date().toISOString() }]);
-        setSelCats([]); setSelLocs([]); setSpecials([]); setVolId(""); setFlash({ ok: true, msg: "Assignment saved!" }); setTimeout(() => setFlash(null), 2500);
+        setSelCats([]); setSelLocs([]); setSpecials([]); setVolId(""); showFlash(true, "Assignment saved!");
       };
-      return <div className="p-4 space-y-4"><h2 className="text-base font-bold text-slate-800">Create Assignment</h2>{flash && <div className={`text-sm px-4 py-3 rounded-xl font-medium ${flash.ok ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-600"}`}>{flash.msg}</div>}<Card title="Assignment Details"><div className="space-y-3"><Field label="Date" type="date" value={date} onChange={setDate}/><div><Label>Shift</Label><div className="grid grid-cols-2 gap-2">{["AM","PM"].map(s => <button key={s} onClick={() => setShift(s)} className={`py-2.5 rounded-xl text-sm font-semibold border-2 ${shift === s ? (s === "AM" ? "bg-amber-500 border-amber-500 text-white" : "bg-indigo-600 border-indigo-600 text-white") : "border-slate-200 text-slate-500"}`}>{s === "AM" ? "☀️ Morning" : "🌙 Afternoon"}</button>)}</div></div><div><Label>Volunteer</Label><select value={volId} onChange={e => setVolId(e.target.value)} className={inputCls}><option value="">— Select volunteer —</option>{activeVols.map(v => <option key={v.id} value={v.id}>{v.name}{v.email ? ` (${v.email})` : ""}</option>)}</select></div></div></Card><PickerCard title="🐱 Cats to care for" items={activeCats} selected={selCats} onToggle={id => toggle(selCats,setSelCats,id)} getTitle={c => c.name} getSubtitle={c => data.locations.find(l => l.id === c.locationId)?.name ?? "No location"}/><PickerCard title="🏠 Apartments / Catios to clean" items={data.locations} selected={selLocs} onToggle={id => toggle(selLocs,setSelLocs,id)} getTitle={l => l.name} getSubtitle={l => l.type}/><Card title="⭐ Special Tasks"><div className="flex flex-wrap gap-1.5 mb-3">{SPECIAL_TASK_TEMPLATES.map(t => <button key={t} onClick={() => addSpecial(t)} className={`text-xs px-3 py-1.5 rounded-full border ${specials.includes(t) ? "bg-orange-100 border-orange-300 text-orange-700" : "border-slate-200 text-slate-500"}`}>{t}</button>)}</div><div className="flex gap-2 mb-2"><input value={newSpecial} onChange={e => setNewSpecial(e.target.value)} onKeyDown={e => e.key === "Enter" && addSpecial()} placeholder="Add custom task…" className={`flex-1 ${inputCls}`} /><button onClick={() => addSpecial()} className="bg-slate-100 text-slate-700 px-4 rounded-xl text-sm font-medium">Add</button></div>{specials.map((t,i) => <div key={i} className="flex items-center justify-between bg-orange-50 border border-orange-100 rounded-xl px-3 py-2 mb-2"><span className="text-sm text-orange-800">⭐ {t}</span><button onClick={() => setSpecials(specials.filter((_,idx)=>idx!==i))} className="text-slate-400 text-lg font-bold">×</button></div>)}</Card><button onClick={handleSave} className="w-full bg-slate-900 text-white font-semibold py-4 rounded-2xl text-sm tracking-wide">Save Assignment</button></div>;
+
+      const deleteAssignment = async (assignmentId) => {
+        const a = data.assignments.find(x => x.id === assignmentId);
+        const label = a ? `${a.volunteerName || "Unknown"} - ${a.shift} - ${fmtDate(a.date)}` : "this assignment";
+        if (!confirm(`Delete ${label}? This cannot be undone.`)) return;
+        await save("assignments", data.assignments.filter(a => a.id !== assignmentId));
+        showFlash(true, "Assignment deleted.");
+      };
+
+      const clearDateAssignments = async () => {
+        if (!selectedDateAssignments.length) return showFlash(false, "No assignments for this date.");
+        if (!confirm(`Delete all ${selectedDateAssignments.length} assignments for ${fmtDate(date)}?`)) return;
+        await save("assignments", data.assignments.filter(a => a.date !== date));
+        showFlash(true, "Assignments for this date deleted.");
+      };
+
+      return <div className="p-4 space-y-4">
+        <h2 className="text-base font-bold text-slate-800">Create Assignment</h2>
+        {flash && <div className={`text-sm px-4 py-3 rounded-xl font-medium ${flash.ok ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-600"}`}>{flash.msg}</div>}
+        <Card title="Assignment Details"><div className="space-y-3"><Field label="Date" type="date" value={date} onChange={setDate}/><div><Label>Shift</Label><div className="grid grid-cols-2 gap-2">{["AM","PM"].map(s => <button key={s} onClick={() => setShift(s)} className={`py-2.5 rounded-xl text-sm font-semibold border-2 ${shift === s ? (s === "AM" ? "bg-amber-500 border-amber-500 text-white" : "bg-indigo-600 border-indigo-600 text-white") : "border-slate-200 text-slate-500"}`}>{s === "AM" ? "☀️ Morning" : "🌙 Afternoon"}</button>)}</div></div><div><Label>Volunteer</Label><select value={volId} onChange={e => setVolId(e.target.value)} className={inputCls}><option value="">— Select volunteer —</option>{activeVols.map(v => <option key={v.id} value={v.id}>{v.name}{v.email ? ` (${v.email})` : ""}</option>)}</select></div></div></Card>
+        <PickerCard title="🐱 Cats to care for" items={activeCats} selected={selCats} onToggle={id => toggle(selCats,setSelCats,id)} getTitle={c => c.name} getSubtitle={c => data.locations.find(l => l.id === c.locationId)?.name ?? "No location"}/>
+        <PickerCard title="🏠 Apartments / Catios to clean" items={data.locations} selected={selLocs} onToggle={id => toggle(selLocs,setSelLocs,id)} getTitle={l => l.name} getSubtitle={l => l.type}/>
+        <Card title="⭐ Special Tasks"><div className="flex flex-wrap gap-1.5 mb-3">{SPECIAL_TASK_TEMPLATES.map(t => <button key={t} onClick={() => addSpecial(t)} className={`text-xs px-3 py-1.5 rounded-full border ${specials.includes(t) ? "bg-orange-100 border-orange-300 text-orange-700" : "border-slate-200 text-slate-500"}`}>{t}</button>)}</div><div className="flex gap-2 mb-2"><input value={newSpecial} onChange={e => setNewSpecial(e.target.value)} onKeyDown={e => e.key === "Enter" && addSpecial()} placeholder="Add custom task…" className={`flex-1 ${inputCls}`} /><button onClick={() => addSpecial()} className="bg-slate-100 text-slate-700 px-4 rounded-xl text-sm font-medium">Add</button></div>{specials.map((t,i) => <div key={i} className="flex items-center justify-between bg-orange-50 border border-orange-100 rounded-xl px-3 py-2 mb-2"><span className="text-sm text-orange-800">⭐ {t}</span><button onClick={() => setSpecials(specials.filter((_,idx)=>idx!==i))} className="text-slate-400 text-lg font-bold">×</button></div>)}</Card>
+        <button onClick={handleSave} className="w-full bg-slate-900 text-white font-semibold py-4 rounded-2xl text-sm tracking-wide">Save Assignment</button>
+
+        <Card title={`🧹 Manage assignments for ${fmtDate(date)}`}>
+          {selectedDateAssignments.length === 0 ? <p className="text-slate-400 text-sm">No assignments on this date.</p> : <div className="space-y-3">
+            {selectedDateAssignments.map(a => { const done = a.tasks.filter(t => t.completedAt).length; return <div key={a.id} className="border border-slate-100 rounded-xl p-3 bg-slate-50"><div className="flex items-start justify-between gap-3"><div><div className="font-semibold text-slate-800 text-sm">{a.shift} · {a.volunteerName || "Unknown"}</div><div className="text-xs text-slate-500 mt-0.5">{done}/{a.tasks.length} tasks completed</div></div><button onClick={() => deleteAssignment(a.id)} className="text-xs bg-red-50 text-red-600 border border-red-100 px-3 py-1.5 rounded-lg font-medium">Delete</button></div></div>; })}
+            <button onClick={clearDateAssignments} className="w-full border border-red-200 text-red-600 bg-red-50 font-semibold py-3 rounded-xl text-sm">Delete all assignments for this date</button>
+          </div>}
+        </Card>
+      </div>;
     }
 
     function PickerCard({ title, items, selected, onToggle, getTitle, getSubtitle }) {
@@ -395,14 +430,22 @@
       return <div className="p-4 space-y-4"><div className="flex items-center justify-between"><h2 className="text-base font-bold text-slate-800">People ({active.length})</h2><button onClick={openNew} className="bg-slate-900 text-white text-xs px-4 py-2 rounded-xl font-medium">+ Add</button></div>{active.length===0?<Empty icon="👤" title="No active people yet" subtitle="Add volunteers or coordinators and set their emails."/>:active.map(vol=><PersonCard key={vol.id} vol={vol}/>) }{inactive.length>0&&<Card title="Inactive people">{inactive.map(vol=><PersonCard key={vol.id} vol={vol} inactiveView />)}</Card>}</div>;
     }
 
-    function HistoryTab({ data }) {
+    function HistoryTab({ data, save }) {
       const [date,setDate]=useState(todayISO());
       const asgns=data.assignments.filter(a=>a.date===date).sort((a,b)=>a.shift.localeCompare(b.shift));
-      return <div className="p-4 space-y-4"><div className="flex items-center justify-between"><h2 className="text-base font-bold text-slate-800">History</h2><input type="date" value={date} onChange={e=>setDate(e.target.value)} className="border border-slate-200 rounded-xl px-3 py-1.5 text-sm bg-white"/></div>{asgns.length===0?<Empty icon="📅" title="No assignments found" subtitle={`Nothing recorded for ${fmtDate(date)}.`}/>:asgns.map(a=><AssignmentCard key={a.id} a={a}/>)}</div>;
+      const deleteAssignment=async(id)=>{ if(!confirm("Delete this assignment? This cannot be undone.")) return; await save("assignments",data.assignments.filter(a=>a.id!==id)); };
+      const clearDate=async()=>{ if(!asgns.length) return; if(!confirm(`Delete all assignments for ${fmtDate(date)}?`)) return; await save("assignments",data.assignments.filter(a=>a.date!==date)); };
+      return <div className="p-4 space-y-4"><div className="flex items-center justify-between"><h2 className="text-base font-bold text-slate-800">History</h2><input type="date" value={date} onChange={e=>setDate(e.target.value)} className="border border-slate-200 rounded-xl px-3 py-1.5 text-sm bg-white"/></div>{asgns.length===0?<Empty icon="📅" title="No assignments found" subtitle={`Nothing recorded for ${fmtDate(date)}.`}/>:<><div className="flex justify-end"><button onClick={clearDate} className="text-xs text-red-600 bg-red-50 border border-red-100 px-3 py-2 rounded-xl font-medium">Delete all for this date</button></div>{asgns.map(a=><AssignmentCard key={a.id} a={a} onDelete={()=>deleteAssignment(a.id)}/>)}</>}</div>;
     }
 
-    function SettingsTab({ user }) {
-      return <div className="p-4 space-y-4"><h2 className="text-base font-bold text-slate-800">Settings</h2><Card title="🔐 Secure login"><p className="text-sm text-slate-600 leading-relaxed">Signed in as <strong>{user?.email}</strong>.</p><p className="text-sm text-slate-500 mt-2 leading-relaxed">Role: <strong>{user?.role}</strong></p><p className="text-sm text-slate-500 mt-2 leading-relaxed">Roles are now managed from the People tab and saved in Firebase under <span className="font-mono">sag_userRoles</span>.</p></Card></div>;
+    function SettingsTab({ user, data, save }) {
+      const resetAllAssignments = async () => {
+        const word = prompt("This deletes ALL assignments/tasks history. Type DELETE to confirm.");
+        if (word !== "DELETE") return;
+        await save("assignments", []);
+        alert("All assignments were deleted.");
+      };
+      return <div className="p-4 space-y-4"><h2 className="text-base font-bold text-slate-800">Settings</h2><Card title="🔐 Secure login"><p className="text-sm text-slate-600 leading-relaxed">Signed in as <strong>{user?.email}</strong>.</p><p className="text-sm text-slate-500 mt-2 leading-relaxed">Role: <strong>{user?.role}</strong></p><p className="text-sm text-slate-500 mt-2 leading-relaxed">Roles are managed from the People tab and saved in Firebase under <span className="font-mono">sag_userRoles</span>.</p></Card><Card title="🧹 Reset test assignments"><p className="text-sm text-slate-500 leading-relaxed mb-3">Use this only when testing and you want to start tasks from zero. This deletes assignments only; it does not delete people, cats, places, or roles.</p><button onClick={resetAllAssignments} className="w-full bg-red-50 text-red-600 border border-red-100 font-semibold py-3 rounded-xl text-sm">Delete ALL assignments</button></Card></div>;
     }
 
     function VolunteerApp({ user, data, save, onLogout }) {
