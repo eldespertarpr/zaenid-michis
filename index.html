@@ -284,11 +284,11 @@
       return <div className="p-4 space-y-4"><div className="flex items-baseline justify-between"><h2 className="text-base font-bold text-slate-800">{fmtDate(tday)}</h2><span className="text-xs text-slate-400">{todayAsgns.length} assignment{todayAsgns.length !== 1 ? "s" : ""}</span></div>{todayAsgns.length === 0 ? <Empty icon="📋" title="No assignments today" subtitle="Go to Assign to create some." /> : todayAsgns.map(a => <AssignmentCard key={a.id} a={a} onDelete={() => deleteAssignment(a.id)} />)}</div>;
     }
 
-    function AssignmentCard({ a, onDelete }) {
+    function AssignmentCard({ a, onDelete, onPrint }) {
       const done = a.tasks.filter(t => t.completedAt).length;
       const pct = a.tasks.length ? Math.round(done / a.tasks.length * 100) : 0;
       const isAM = a.shift === "AM";
-      return <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden"><div className={`px-4 py-3 flex items-center justify-between ${isAM ? "bg-amber-50 border-b border-amber-100" : "bg-indigo-50 border-b border-indigo-100"}`}><div className="flex items-center gap-2"><span className={`text-xs font-bold px-2.5 py-1 rounded-full ${isAM ? "bg-amber-500 text-white" : "bg-indigo-600 text-white"}`}>{isAM ? "☀️ AM" : "🌙 PM"}</span><span className="font-semibold text-slate-800 text-sm">{a.volunteerName || "Unknown"}</span></div><div className="flex items-center gap-3"><span className={`text-sm font-bold ${pct === 100 ? "text-emerald-600" : "text-slate-500"}`}>{done}/{a.tasks.length}</span>{onDelete && <button onClick={onDelete} className="text-slate-300 font-bold text-lg leading-none">✕</button>}</div></div><div className="h-1.5 bg-slate-100"><div className={`h-full ${pct === 100 ? "bg-emerald-500" : isAM ? "bg-amber-400" : "bg-indigo-500"}`} style={{ width: `${pct}%` }} /></div><div className="px-4 py-3 space-y-1.5">{a.tasks.map(t => <div key={t.id} className="flex items-center gap-2 text-sm"><span className={t.completedAt ? "text-emerald-500" : "text-slate-300"}>{t.completedAt ? "✓" : "○"}</span><span className={`flex-1 ${t.completedAt ? "line-through text-slate-400" : "text-slate-700"}`}>{t.catName && <span className="font-semibold text-slate-500">[{t.catName}] </span>}{t.name}</span>{t.completedAt && <span className="text-slate-300 text-xs">{fmtTime(t.completedAt)}</span>}</div>)}</div></div>;
+      return <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden"><div className={`px-4 py-3 flex items-center justify-between ${isAM ? "bg-amber-50 border-b border-amber-100" : "bg-indigo-50 border-b border-indigo-100"}`}><div className="flex items-center gap-2"><span className={`text-xs font-bold px-2.5 py-1 rounded-full ${isAM ? "bg-amber-500 text-white" : "bg-indigo-600 text-white"}`}>{isAM ? "☀️ AM" : "🌙 PM"}</span><span className="font-semibold text-slate-800 text-sm">{a.volunteerName || "Unknown"}</span></div><div className="flex items-center gap-3"><span className={`text-sm font-bold ${pct === 100 ? "text-emerald-600" : "text-slate-500"}`}>{done}/{a.tasks.length}</span>{onPrint && <button onClick={onPrint} className="text-xs bg-white bg-opacity-70 text-slate-600 border border-slate-200 px-2 py-1 rounded-lg font-medium">Print</button>}{onDelete && <button onClick={onDelete} className="text-slate-300 font-bold text-lg leading-none">✕</button>}</div></div><div className="h-1.5 bg-slate-100"><div className={`h-full ${pct === 100 ? "bg-emerald-500" : isAM ? "bg-amber-400" : "bg-indigo-500"}`} style={{ width: `${pct}%` }} /></div><div className="px-4 py-3 space-y-1.5">{a.tasks.map(t => <div key={t.id} className="flex items-center gap-2 text-sm"><span className={t.completedAt ? "text-emerald-500" : "text-slate-300"}>{t.completedAt ? "✓" : "○"}</span><span className={`flex-1 ${t.completedAt ? "line-through text-slate-400" : "text-slate-700"}`}>{t.catName && <span className="font-semibold text-slate-500">[{t.catName}] </span>}{t.name}</span>{t.completedAt && <span className="text-slate-300 text-xs">{fmtTime(t.completedAt)}</span>}</div>)}</div></div>;
     }
 
     function AssignTab({ data, save }) {
@@ -368,18 +368,26 @@
 
     function CatsTab({ data, save }) {
       const empty = { name: "", locationId: "", cageNumber: "", status: "resident", medications: [], notes: "", active: true };
-      const [mode,setMode]=useState("list"), [editing,setEditing]=useState(null), [form,setForm]=useState(empty);
+      const [mode,setMode]=useState("list"), [editing,setEditing]=useState(null), [form,setForm]=useState(empty), [showInactive,setShowInactive]=useState(false);
       const setF=(k,v)=>setForm(p=>({...p,[k]:v}));
       const openNew=()=>{setForm(empty); setEditing("new"); setMode("form");};
       const openEdit=c=>{setForm({...c, medications:c.medications?[...c.medications]:[]}); setEditing(c); setMode("form");};
       const close=()=>{setMode("list"); setEditing(null); setForm(empty);};
       const addMed=()=>setF("medications",[...(form.medications||[]),{id:uid(),name:"",dosage:"",schedule:"AM",notes:""}]);
       const updMed=(i,k,v)=>{const meds=[...(form.medications||[])]; meds[i]={...meds[i],[k]:v}; setF("medications",meds);};
-      const saveCat=async()=>{ if(!form.name.trim()) return; const cats=editing==="new"?[...data.cats,{...form,id:uid()}]:data.cats.map(c=>c.id===editing.id?{...form,id:c.id}:c); await save("cats",cats); close(); };
-      const archive=async cat=>save("cats",data.cats.map(c=>c.id===cat.id?{...c,active:!c.active}:c));
-      const active=data.cats.filter(c=>c.active!==false);
+      const saveCat=async()=>{ if(!form.name.trim()) return; const cleanForm={...form,name:form.name.trim()}; const cats=editing==="new"?[...data.cats,{...cleanForm,id:uid()}]:data.cats.map(c=>c.id===editing.id?{...cleanForm,id:c.id}:c); await save("cats",cats); close(); };
+      const toggleActive=async cat=>save("cats",data.cats.map(c=>c.id===cat.id?{...c,active:!c.active}:c));
+      const deleteCat=async cat=>{
+        const used=(data.assignments||[]).some(a=>(a.tasks||[]).some(t=>t.catId===cat.id));
+        const msg=used?`"${cat.name}" appears in existing assignments/history. Deleting it will remove it from the Cats list, but old task text may remain in history. Type DELETE to confirm.`:`Delete "${cat.name}" permanently? Type DELETE to confirm.`;
+        if(prompt(msg)!=="DELETE") return;
+        await save("cats",data.cats.filter(c=>c.id!==cat.id));
+      };
+      const active=data.cats.filter(c=>c.active!==false), inactive=data.cats.filter(c=>c.active===false);
+      const locName=cat=>data.locations.find(l=>l.id===cat.locationId)?.name ?? "—";
+      const CatCard=({cat,inactiveCard=false})=><div className={`bg-white rounded-2xl border shadow-sm p-4 ${inactiveCard?"border-slate-200 opacity-80":"border-slate-100"}`}><div className="flex items-start justify-between gap-3"><div className="flex-1 min-w-0"><div className="font-semibold text-slate-800">{cat.name}</div><div className="text-sm text-slate-400 mt-0.5">{locName(cat)}{cat.cageNumber?` · Cage ${cat.cageNumber}`:""}</div><div className="flex flex-wrap gap-1.5 mt-2"><span className="text-xs bg-slate-100 text-slate-600 px-2.5 py-0.5 rounded-full font-medium capitalize">{cat.status||"resident"}</span>{(cat.medications||[]).length>0&&<span className="text-xs bg-rose-50 text-rose-600 border border-rose-100 px-2.5 py-0.5 rounded-full font-medium">💊 {(cat.medications||[]).length} med{(cat.medications||[]).length>1?"s":""}</span>}{inactiveCard&&<span className="text-xs bg-slate-200 text-slate-600 px-2.5 py-0.5 rounded-full font-medium">Archived</span>}</div>{cat.notes&&<p className="text-xs text-slate-400 mt-2 italic leading-relaxed">{cat.notes}</p>}</div><div className="flex flex-col items-end gap-1.5 ml-2 flex-shrink-0"><button onClick={()=>openEdit(cat)} className="text-xs text-teal-600 font-medium">Edit</button><button onClick={()=>toggleActive(cat)} className="text-xs text-slate-500">{inactiveCard?"Reactivate":"Archive"}</button><button onClick={()=>deleteCat(cat)} className="text-xs text-red-500 font-medium">Delete</button></div></div></div>;
       if(mode==="form") return <div className="p-4 space-y-4"><BackBar onBack={close} title={editing==="new"?"Add Cat":"Edit Cat"}/><Card><div className="space-y-3"><Field label="Name *" value={form.name||""} onChange={v=>setF("name",v)} placeholder="e.g. Luna"/><div><Label>Location</Label><select value={form.locationId||""} onChange={e=>setF("locationId",e.target.value)} className={inputCls}><option value="">— None —</option>{data.locations.map(l=><option key={l.id} value={l.id}>{l.name}</option>)}</select></div><Field label="Cage / Catio Number" value={form.cageNumber||""} onChange={v=>setF("cageNumber",v)} placeholder="e.g. 3A"/><div><Label>Status</Label><select value={form.status||"resident"} onChange={e=>setF("status",e.target.value)} className={inputCls}><option value="resident">Resident</option><option value="feral">Feral / Undomesticated</option><option value="foster">Foster</option></select></div><Field label="Notes" value={form.notes||""} onChange={v=>setF("notes",v)} multiline /></div></Card><Card title="💊 Medications">{(form.medications||[]).map((m,i)=><div key={m.id||i} className="border border-slate-200 rounded-xl p-3 space-y-2 mb-3"><Field label="Medication name" value={m.name||""} onChange={v=>updMed(i,"name",v)}/><Field label="Dosage" value={m.dosage||""} onChange={v=>updMed(i,"dosage",v)}/><div><Label>Schedule</Label><select value={m.schedule||"AM"} onChange={e=>updMed(i,"schedule",e.target.value)} className={inputCls}><option value="AM">Morning (AM) only</option><option value="PM">Afternoon (PM) only</option><option value="Both">AM & PM — twice daily</option></select></div><Field label="Notes" value={m.notes||""} onChange={v=>updMed(i,"notes",v)}/><button onClick={()=>setF("medications",(form.medications||[]).filter((_,idx)=>idx!==i))} className="text-red-400 text-xs font-medium">Remove medication</button></div>)}<button onClick={addMed} className="w-full border-2 border-dashed border-slate-200 text-slate-500 py-2.5 rounded-xl text-sm font-medium">+ Add Medication</button></Card><button onClick={saveCat} className="w-full bg-slate-900 text-white font-semibold py-4 rounded-2xl text-sm">Save Cat</button></div>;
-      return <div className="p-4 space-y-4"><div className="flex items-center justify-between"><h2 className="text-base font-bold text-slate-800">Cats ({active.length})</h2><button onClick={openNew} className="bg-slate-900 text-white text-xs px-4 py-2 rounded-xl font-medium">+ Add Cat</button></div>{active.length===0?<Empty icon="🐱" title="No cats added yet" subtitle="Tap Add Cat to get started."/>:active.map(cat=><div key={cat.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4"><div className="flex items-start justify-between"><div><div className="font-semibold text-slate-800">{cat.name}</div><div className="text-sm text-slate-400 mt-0.5">{data.locations.find(l=>l.id===cat.locationId)?.name ?? "—"}{cat.cageNumber?` · Cage ${cat.cageNumber}`:""}</div>{cat.notes&&<p className="text-xs text-slate-400 mt-2 italic">{cat.notes}</p>}</div><div className="flex flex-col items-end gap-1.5 ml-3"><button onClick={()=>openEdit(cat)} className="text-xs text-teal-600 font-medium">Edit</button><button onClick={()=>archive(cat)} className="text-xs text-slate-400">Archive</button></div></div></div>)}</div>;
+      return <div className="p-4 space-y-4"><div className="flex items-center justify-between"><h2 className="text-base font-bold text-slate-800">Cats ({active.length})</h2><button onClick={openNew} className="bg-slate-900 text-white text-xs px-4 py-2 rounded-xl font-medium">+ Add Cat</button></div>{active.length===0?<Empty icon="🐱" title="No active cats" subtitle="Tap Add Cat to get started."/>:active.map(cat=><CatCard key={cat.id} cat={cat}/>)}{inactive.length>0&&<div className="pt-2"><button onClick={()=>setShowInactive(!showInactive)} className="w-full text-xs text-slate-500 bg-slate-100 rounded-xl py-2 font-medium">{showInactive?"Hide":"Show"} archived cats ({inactive.length})</button>{showInactive&&<div className="space-y-3 mt-3">{inactive.map(cat=><CatCard key={cat.id} cat={cat} inactiveCard />)}</div>}</div>}</div>;
     }
 
     function LocationsTab({ data, save }) {
@@ -430,12 +438,72 @@
       return <div className="p-4 space-y-4"><div className="flex items-center justify-between"><h2 className="text-base font-bold text-slate-800">People ({active.length})</h2><button onClick={openNew} className="bg-slate-900 text-white text-xs px-4 py-2 rounded-xl font-medium">+ Add</button></div>{active.length===0?<Empty icon="👤" title="No active people yet" subtitle="Add volunteers or coordinators and set their emails."/>:active.map(vol=><PersonCard key={vol.id} vol={vol}/>) }{inactive.length>0&&<Card title="Inactive people">{inactive.map(vol=><PersonCard key={vol.id} vol={vol} inactiveView />)}</Card>}</div>;
     }
 
+    function escapeHtml(value) {
+      return String(value ?? "").replace(/[&<>"]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
+    }
+
+    function printAssignments(data, assignments, options = {}) {
+      const list = [...assignments].sort((a, b) => (a.volunteerName || "").localeCompare(b.volunteerName || "") || a.shift.localeCompare(b.shift));
+      if (!list.length) { alert("No assignments to print for this selection."); return; }
+      const dateLabel = options.date ? fmtDate(options.date) : "Selected tasks";
+      const grouped = {};
+      list.forEach(a => {
+        const key = `${a.volunteerName || "Unknown"}||${a.volunteerId || ""}`;
+        if (!grouped[key]) grouped[key] = { name: a.volunteerName || "Unknown", items: [] };
+        grouped[key].items.push(a);
+      });
+      const groups = Object.values(grouped);
+      const pageBreakCss = options.pageBreakPerVolunteer ? ".volunteer-block{page-break-after:always;} .volunteer-block:last-child{page-break-after:auto;}" : "";
+      const groupHtml = groups.map(group => `
+        <section class="volunteer-block">
+          <h2>Volunteer: ${escapeHtml(group.name)}</h2>
+          ${group.items.map(a => `
+            <div class="assignment">
+              <div class="shift">${escapeHtml(a.shift)} Shift <span>${(a.tasks || []).filter(t => t.completedAt).length}/${(a.tasks || []).length} completed</span></div>
+              <ul>
+                ${(a.tasks || []).map(t => `<li><span class="box">☐</span><span>${t.catName ? `<strong>[${escapeHtml(t.catName)}]</strong> ` : ""}${escapeHtml(t.name)}${t.locationName ? ` <em>${escapeHtml(t.locationName)}</em>` : ""}</span></li>`).join("")}
+              </ul>
+              <div class="notes"><strong>Notes:</strong><br><div></div><div></div></div>
+              <div class="sign">Signature: ________________________ Time: __________</div>
+            </div>
+          `).join("")}
+        </section>`).join("");
+      const html = `<!doctype html><html><head><meta charset="utf-8"><title>Zaenid Michis - Print Tasks</title><style>
+        body{font-family:Arial,sans-serif;color:#0f172a;margin:24px;background:white;} h1{font-size:22px;margin:0 0 4px;} .sub{font-size:13px;color:#64748b;margin-bottom:18px;} h2{font-size:16px;margin:18px 0 8px;padding:8px 10px;background:#f1f5f9;border-radius:8px;} .assignment{border:1px solid #e2e8f0;border-radius:10px;padding:12px;margin:10px 0 14px;} .shift{font-weight:700;font-size:14px;margin-bottom:8px;display:flex;justify-content:space-between;} .shift span{font-weight:400;color:#64748b;font-size:12px;} ul{list-style:none;padding:0;margin:0;} li{display:flex;gap:8px;align-items:flex-start;font-size:13px;line-height:1.35;padding:5px 0;border-bottom:1px solid #f1f5f9;} li:last-child{border-bottom:0;} .box{font-size:16px;line-height:1;} em{color:#64748b;font-size:12px;} .notes{font-size:12px;color:#475569;margin-top:12px;} .notes div{height:22px;border-bottom:1px solid #cbd5e1;} .sign{font-size:12px;margin-top:14px;} ${pageBreakCss} @media print{button{display:none;} body{margin:14mm;} .assignment{break-inside:avoid;}}
+      </style></head><body><button onclick="window.print()" style="padding:10px 14px;margin-bottom:16px;border:1px solid #cbd5e1;border-radius:8px;background:#0f172a;color:white;font-weight:bold;">Print</button><h1>Zaenid Michis</h1><div class="sub">Daily Volunteer Tasks — ${escapeHtml(dateLabel)}${options.shift && options.shift !== "All" ? ` · ${escapeHtml(options.shift)}` : ""}</div>${groupHtml}</body></html>`;
+      const w = window.open("", "_blank");
+      if (!w) { alert("Pop-up blocked. Allow pop-ups to print."); return; }
+      w.document.open();
+      w.document.write(html);
+      w.document.close();
+      setTimeout(() => { try { w.focus(); w.print(); } catch(e) {} }, 500);
+    }
+
     function HistoryTab({ data, save }) {
       const [date,setDate]=useState(todayISO());
+      const [volFilter,setVolFilter]=useState("all");
+      const [shiftFilter,setShiftFilter]=useState("All");
+      const [pageBreak,setPageBreak]=useState(true);
       const asgns=data.assignments.filter(a=>a.date===date).sort((a,b)=>a.shift.localeCompare(b.shift));
+      const volunteersForDate=[...new Map(asgns.map(a=>[a.volunteerId || a.volunteerName,{id:a.volunteerId || a.volunteerName,name:a.volunteerName || "Unknown"}])).values()].sort((a,b)=>a.name.localeCompare(b.name));
+      const filtered=asgns.filter(a=>(volFilter==="all" || (a.volunteerId || a.volunteerName)===volFilter) && (shiftFilter==="All" || a.shift===shiftFilter));
       const deleteAssignment=async(id)=>{ if(!confirm("Delete this assignment? This cannot be undone.")) return; await save("assignments",data.assignments.filter(a=>a.id!==id)); };
       const clearDate=async()=>{ if(!asgns.length) return; if(!confirm(`Delete all assignments for ${fmtDate(date)}?`)) return; await save("assignments",data.assignments.filter(a=>a.date!==date)); };
-      return <div className="p-4 space-y-4"><div className="flex items-center justify-between"><h2 className="text-base font-bold text-slate-800">History</h2><input type="date" value={date} onChange={e=>setDate(e.target.value)} className="border border-slate-200 rounded-xl px-3 py-1.5 text-sm bg-white"/></div>{asgns.length===0?<Empty icon="📅" title="No assignments found" subtitle={`Nothing recorded for ${fmtDate(date)}.`}/>:<><div className="flex justify-end"><button onClick={clearDate} className="text-xs text-red-600 bg-red-50 border border-red-100 px-3 py-2 rounded-xl font-medium">Delete all for this date</button></div>{asgns.map(a=><AssignmentCard key={a.id} a={a} onDelete={()=>deleteAssignment(a.id)}/>)}</>}</div>;
+      const printFiltered=()=>printAssignments(data,filtered,{date,shift:shiftFilter,pageBreakPerVolunteer:pageBreak});
+      const printOne=(a)=>printAssignments(data,[a],{date,shift:a.shift,pageBreakPerVolunteer:false});
+      return <div className="p-4 space-y-4">
+        <div className="flex items-center justify-between"><h2 className="text-base font-bold text-slate-800">History</h2><input type="date" value={date} onChange={e=>setDate(e.target.value)} className="border border-slate-200 rounded-xl px-3 py-1.5 text-sm bg-white"/></div>
+        <Card title="🖨️ Print / Export daily tasks">
+          <div className="space-y-3">
+            <div><Label>Volunteer</Label><select value={volFilter} onChange={e=>setVolFilter(e.target.value)} className={inputCls}><option value="all">All volunteers</option>{volunteersForDate.map(v=><option key={v.id} value={v.id}>{v.name}</option>)}</select></div>
+            <div><Label>Shift</Label><select value={shiftFilter} onChange={e=>setShiftFilter(e.target.value)} className={inputCls}><option value="All">All shifts</option><option value="AM">AM only</option><option value="PM">PM only</option></select></div>
+            <label className="flex items-center gap-2 text-sm text-slate-600"><input type="checkbox" checked={pageBreak} onChange={e=>setPageBreak(e.target.checked)} /> Page break per volunteer</label>
+            <button onClick={printFiltered} disabled={!filtered.length} className="w-full bg-slate-900 text-white font-semibold py-3 rounded-xl text-sm disabled:opacity-40">Print selected tasks ({filtered.length})</button>
+            <p className="text-xs text-slate-400 leading-relaxed">Choose All volunteers to print the full day, or select one volunteer to print only their sheet. The browser can also save it as PDF.</p>
+          </div>
+        </Card>
+        {asgns.length===0?<Empty icon="📅" title="No assignments found" subtitle={`Nothing recorded for ${fmtDate(date)}.`}/>:<><div className="flex justify-end"><button onClick={clearDate} className="text-xs text-red-600 bg-red-50 border border-red-100 px-3 py-2 rounded-xl font-medium">Delete all for this date</button></div>{filtered.map(a=><AssignmentCard key={a.id} a={a} onPrint={()=>printOne(a)} onDelete={()=>deleteAssignment(a.id)}/>)}</>}
+      </div>;
     }
 
     function SettingsTab({ user, data, save }) {
