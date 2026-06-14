@@ -48,8 +48,9 @@
     const firebaseDB = firebase.database();
     const firebaseAuth = firebase.auth();
 
-    const COORDINATOR_EMAILS = ["explorerfta@gmail.com"];
-    const DEFAULT_DATA = { locations: [], cats: [], volunteers: [], assignments: [] };
+    const INITIAL_COORDINATOR_UID = "A1kGcYM92TS8uiQQojDhRunsYSF3";
+    const INITIAL_COORDINATOR_EMAIL = "explorerfta@gmail.com";
+    const DEFAULT_DATA = { locations: [], cats: [], volunteers: [], assignments: [], userRoles: {} };
 
     const CAT_ROUTINE_TASKS = [
       "Clean cage",
@@ -89,6 +90,10 @@
         try { await firebaseDB.ref(key).set(val); }
         catch (e) { console.error("Database write failed", key, e); alert("Could not save. Check connection or Firebase permissions."); }
       },
+      async setPath(path, val) {
+        try { await firebaseDB.ref(path).set(val); }
+        catch (e) { console.error("Database write failed", path, e); alert("Could not save. Check connection or Firebase permissions."); }
+      },
     };
 
     function App() {
@@ -102,6 +107,7 @@
           cats: (await db.get("sag_cats")) ?? [],
           volunteers: (await db.get("sag_volunteers")) ?? [],
           assignments: (await db.get("sag_assignments")) ?? [],
+          userRoles: (await db.get("sag_userRoles")) ?? {},
         };
         setData(d);
         return d;
@@ -123,6 +129,7 @@
           cats: "sag_cats",
           volunteers: "sag_volunteers",
           assignments: "sag_assignments",
+          userRoles: "sag_userRoles",
         };
         setData(prev => ({ ...prev, [key]: value }));
         await db.set(keyMap[key], value);
@@ -131,18 +138,43 @@
       const login = async (email, password) => {
         try {
           const emailClean = cleanEmail(email);
-          await firebaseAuth.signInWithEmailAndPassword(emailClean, password);
+          const cred = await firebaseAuth.signInWithEmailAndPassword(emailClean, password);
+          const authUser = cred.user;
           const fresh = await loadData();
 
-          if (COORDINATOR_EMAILS.includes(emailClean)) {
-            setUser({ role: "coordinator", email: emailClean, name: "Coordinator" });
+          let roleInfo = fresh.userRoles?.[authUser.uid] || null;
+
+          if (!roleInfo && authUser.uid === INITIAL_COORDINATOR_UID && emailClean === INITIAL_COORDINATOR_EMAIL) {
+            roleInfo = { active: true, email: emailClean, role: "coordinator" };
+            await db.setPath(`sag_userRoles/${authUser.uid}`, roleInfo);
+          }
+
+          const vol = fresh.volunteers.find(v => cleanEmail(v.email) === emailClean);
+          if (vol && vol.uid !== authUser.uid) {
+            const updatedVols = fresh.volunteers.map(v => v.id === vol.id ? { ...v, uid: authUser.uid } : v);
+            await save("volunteers", updatedVols);
+            fresh.volunteers = updatedVols;
+          }
+
+          if (!roleInfo && vol) {
+            roleInfo = { active: vol.active !== false, email: emailClean, role: vol.role || "volunteer", volunteerId: vol.id, name: vol.name };
+            await db.setPath(`sag_userRoles/${authUser.uid}`, roleInfo);
+          }
+
+          if (!roleInfo || roleInfo.active === false) {
+            await firebaseAuth.signOut();
+            return false;
+          }
+
+          if (roleInfo.role === "coordinator") {
+            setUser({ role: "coordinator", email: emailClean, uid: authUser.uid, name: roleInfo.name || "Coordinator" });
             setScreen("coordinator");
             return true;
           }
 
-          const vol = fresh.volunteers.find(v => cleanEmail(v.email) === emailClean && v.active !== false);
-          if (vol) {
-            setUser({ role: "volunteer", email: emailClean, ...vol });
+          const activeVol = fresh.volunteers.find(v => (v.uid === authUser.uid || cleanEmail(v.email) === emailClean) && v.active !== false);
+          if (activeVol) {
+            setUser({ role: "volunteer", email: emailClean, uid: authUser.uid, ...activeVol });
             setScreen("volunteer");
             return true;
           }
@@ -177,7 +209,6 @@
       const [password, setPassword] = useState("");
       const [error, setError] = useState(false);
       const [busy, setBusy] = useState(false);
-      const [showPassword, setShowPassword] = useState(false);
 
       const submit = async () => {
         if (busy) return;
@@ -203,27 +234,7 @@
               <Label>Email</Label>
               <input type="email" value={email} onChange={e => { setEmail(e.target.value); setError(false); }} onKeyDown={e => e.key === "Enter" && submit()} placeholder="name@example.com" className="w-full border-2 rounded-xl px-4 py-3 text-base focus:outline-none transition-colors border-slate-200 focus:border-teal-500 mb-3" autoFocus />
               <Label>Password</Label>
-<div className="relative">
-  <input
-    type={showPassword ? "text" : "password"}
-    value={password}
-    onChange={e => { setPassword(e.target.value); setError(false); }}
-    onKeyDown={e => e.key === "Enter" && submit()}
-    placeholder="••••••••"
-    className={`w-full border-2 rounded-xl px-4 py-3 pr-14 text-base focus:outline-none transition-colors ${
-      error ? "border-red-400 bg-red-50" : "border-slate-200 focus:border-teal-500"
-    }`}
-  />
-
-  <button
-    type="button"
-    onClick={() => setShowPassword(p => !p)}
-    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-xl"
-    aria-label={showPassword ? "Hide password" : "Show password"}
-  >
-    {showPassword ? "🙈" : "👁️"}
-  </button>
-</div>
+              <input type="password" value={password} onChange={e => { setPassword(e.target.value); setError(false); }} onKeyDown={e => e.key === "Enter" && submit()} placeholder="••••••••" className={`w-full border-2 rounded-xl px-4 py-3 text-base focus:outline-none transition-colors ${error ? "border-red-400 bg-red-50" : "border-slate-200 focus:border-teal-500"}`} />
               {error && <p className="text-red-500 text-sm text-center mt-2 font-medium">Invalid login or user not authorized</p>}
               <button onClick={submit} disabled={busy} className="mt-4 w-full bg-slate-900 text-white font-semibold py-3.5 rounded-xl text-sm tracking-wide disabled:opacity-60">{busy ? "Signing in…" : "Sign In"}</button>
             </div>
@@ -347,14 +358,41 @@
     }
 
     function VolunteersTab({ data, save }) {
-      const [mode,setMode]=useState("list"), [editing,setEditing]=useState(null), [form,setForm]=useState({}), [showPins,setShowPins]=useState({}), [err,setErr]=useState("");
-      const openNew=()=>{setForm({name:"",email:"",pin:"",active:true}); setEditing("new"); setMode("form"); setErr("");};
-      const openEdit=v=>{setForm({...v}); setEditing(v); setMode("form"); setErr("");};
+      const [mode,setMode]=useState("list"), [editing,setEditing]=useState(null), [form,setForm]=useState({}), [err,setErr]=useState("");
+      const roles = data.userRoles || {};
+      const openNew=()=>{setForm({name:"",email:"",role:"volunteer",active:true}); setEditing("new"); setMode("form"); setErr("");};
+      const openEdit=v=>{setForm({role:"volunteer",...v}); setEditing(v); setMode("form"); setErr("");};
       const close=()=>{setMode("list"); setEditing(null); setForm({}); setErr("");};
-      const saveVol=async()=>{ if(!form.name?.trim()) return setErr("Name is required."); if(!form.email?.trim()) return setErr("Email is required."); const email=cleanEmail(form.email); const conflict=data.volunteers.find(v=>cleanEmail(v.email)===email && v.id!==form.id); if(conflict) return setErr(`Email is already used by ${conflict.name}.`); const cleanForm={...form,email}; const vols=editing==="new"?[...data.volunteers,{...cleanForm,id:uid()}]:data.volunteers.map(v=>v.id===editing.id?{...cleanForm,id:v.id}:v); await save("volunteers",vols); close();};
+      const upsertUserRole = async (vol) => {
+        if (!vol.uid) return;
+        const roleData = { active: vol.active !== false, email: cleanEmail(vol.email), role: vol.role || "volunteer", volunteerId: vol.id, name: vol.name };
+        const nextRoles = { ...(data.userRoles || {}), [vol.uid]: roleData };
+        await save("userRoles", nextRoles);
+      };
+      const saveVol=async()=>{
+        if(!form.name?.trim()) return setErr("Name is required.");
+        if(!form.email?.trim()) return setErr("Email is required.");
+        const email=cleanEmail(form.email);
+        const conflict=data.volunteers.find(v=>cleanEmail(v.email)===email && v.id!==form.id);
+        if(conflict) return setErr(`Email is already used by ${conflict.name}.`);
+        const cleanForm={...form,email,role:form.role||"volunteer",active:form.active!==false};
+        const savedVol = editing==="new" ? {...cleanForm,id:uid()} : {...cleanForm,id:editing.id};
+        const vols=editing==="new"?[...data.volunteers,savedVol]:data.volunteers.map(v=>v.id===editing.id?savedVol:v);
+        await save("volunteers",vols);
+        await upsertUserRole(savedVol);
+        close();
+      };
+      const toggleActive=async(vol)=>{
+        const updated={...vol,active:!vol.active};
+        const vols=data.volunteers.map(v=>v.id===vol.id?updated:v);
+        await save("volunteers",vols);
+        await upsertUserRole(updated);
+      };
       const active=data.volunteers.filter(v=>v.active!==false), inactive=data.volunteers.filter(v=>v.active===false);
-      if(mode==="form") return <div className="p-4 space-y-4"><BackBar onBack={close} title={editing==="new"?"Add Volunteer":"Edit Volunteer"}/><Card><div className="space-y-3"><Field label="Full Name *" value={form.name||""} onChange={v=>setForm({...form,name:v})}/><Field label="Email *" type="email" value={form.email||""} onChange={v=>setForm({...form,email:v})} placeholder="volunteer@example.com"/><Field label="PIN (optional, legacy)" type="password" value={form.pin||""} onChange={v=>setForm({...form,pin:v})}/><p className="text-xs text-slate-400">Email must match the Firebase Authentication user email.</p>{err&&<div className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-xl">{err}</div>}</div></Card><button onClick={saveVol} className="w-full bg-slate-900 text-white font-semibold py-4 rounded-2xl text-sm">Save Volunteer</button></div>;
-      return <div className="p-4 space-y-4"><div className="flex items-center justify-between"><h2 className="text-base font-bold text-slate-800">Volunteers ({active.length})</h2><button onClick={openNew} className="bg-slate-900 text-white text-xs px-4 py-2 rounded-xl font-medium">+ Add</button></div>{active.length===0?<Empty icon="👤" title="No volunteers yet" subtitle="Add volunteers and set their emails."/>:active.map(vol=><div key={vol.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4"><div className="flex items-center justify-between"><div><div className="font-semibold text-slate-800">{vol.name}</div><div className="text-sm text-slate-400 mt-0.5">{vol.email||"No email"}</div>{vol.pin&&<div className="text-xs text-slate-400 mt-0.5 font-mono">Legacy PIN: {showPins[vol.id]?vol.pin:"••••"}<button onClick={()=>setShowPins({...showPins,[vol.id]:!showPins[vol.id]})} className="ml-2 text-xs text-teal-500 font-sans">{showPins[vol.id]?"hide":"reveal"}</button></div>}</div><div className="flex flex-col items-end gap-1.5 ml-3"><button onClick={()=>openEdit(vol)} className="text-xs text-teal-600 font-medium">Edit</button><button onClick={()=>save("volunteers",data.volunteers.map(v=>v.id===vol.id?{...v,active:!v.active}:v))} className="text-xs text-slate-400">Deactivate</button></div></div></div>) }{inactive.length>0&&<p className="text-center text-xs text-slate-400 mt-1">{inactive.length} inactive volunteer{inactive.length>1?"s":""} not shown.</p>}</div>;
+      const roleBadge=(role)=><span className={`text-xs px-2 py-0.5 rounded-full font-medium ${role==="coordinator"?"bg-indigo-100 text-indigo-700":"bg-slate-100 text-slate-600"}`}>{role==="coordinator"?"Coordinator":"Volunteer"}</span>;
+      if(mode==="form") return <div className="p-4 space-y-4"><BackBar onBack={close} title={editing==="new"?"Add Person":"Edit Person"}/><Card><div className="space-y-3"><Field label="Full Name *" value={form.name||""} onChange={v=>setForm({...form,name:v})}/><Field label="Email *" type="email" value={form.email||""} onChange={v=>setForm({...form,email:v})} placeholder="person@example.com"/><div><Label>Role</Label><select value={form.role||"volunteer"} onChange={e=>setForm({...form,role:e.target.value})} className={inputCls}><option value="volunteer">Volunteer</option><option value="coordinator">Coordinator</option></select></div>{form.uid?<p className="text-xs text-emerald-600">Linked to Firebase Auth user.</p>:<p className="text-xs text-amber-600">This person must sign in once before role rules can be linked to their Firebase UID.</p>}{err&&<div className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-xl">{err}</div>}</div></Card><button onClick={saveVol} className="w-full bg-slate-900 text-white font-semibold py-4 rounded-2xl text-sm">Save Person</button></div>;
+      const PersonCard=({vol,inactiveView=false})=><div key={vol.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4"><div className="flex items-center justify-between"><div className="min-w-0"><div className="font-semibold text-slate-800">{vol.name}</div><div className="text-sm text-slate-400 mt-0.5 break-all">{vol.email||"No email"}</div><div className="mt-2 flex flex-wrap gap-2 items-center">{roleBadge(vol.role||roles[vol.uid]?.role||"volunteer")}{vol.uid?<span className="text-xs text-emerald-600">Linked</span>:<span className="text-xs text-amber-600">Not linked yet</span>}</div></div><div className="flex flex-col items-end gap-1.5 ml-3"><button onClick={()=>openEdit(vol)} className="text-xs text-teal-600 font-medium">Edit</button><button onClick={()=>toggleActive(vol)} className="text-xs text-slate-400">{inactiveView?"Reactivate":"Deactivate"}</button></div></div></div>;
+      return <div className="p-4 space-y-4"><div className="flex items-center justify-between"><h2 className="text-base font-bold text-slate-800">People ({active.length})</h2><button onClick={openNew} className="bg-slate-900 text-white text-xs px-4 py-2 rounded-xl font-medium">+ Add</button></div>{active.length===0?<Empty icon="👤" title="No active people yet" subtitle="Add volunteers or coordinators and set their emails."/>:active.map(vol=><PersonCard key={vol.id} vol={vol}/>) }{inactive.length>0&&<Card title="Inactive people">{inactive.map(vol=><PersonCard key={vol.id} vol={vol} inactiveView />)}</Card>}</div>;
     }
 
     function HistoryTab({ data }) {
@@ -364,7 +402,7 @@
     }
 
     function SettingsTab({ user }) {
-      return <div className="p-4 space-y-4"><h2 className="text-base font-bold text-slate-800">Settings</h2><Card title="🔐 Secure login"><p className="text-sm text-slate-600 leading-relaxed">Signed in as <strong>{user?.email}</strong>.</p><p className="text-sm text-slate-500 mt-2 leading-relaxed">This version uses Firebase Authentication. After confirming coordinator and volunteer logins work, change Realtime Database Rules to require authenticated users.</p></Card></div>;
+      return <div className="p-4 space-y-4"><h2 className="text-base font-bold text-slate-800">Settings</h2><Card title="🔐 Secure login"><p className="text-sm text-slate-600 leading-relaxed">Signed in as <strong>{user?.email}</strong>.</p><p className="text-sm text-slate-500 mt-2 leading-relaxed">Role: <strong>{user?.role}</strong></p><p className="text-sm text-slate-500 mt-2 leading-relaxed">Roles are now managed from the People tab and saved in Firebase under <span className="font-mono">sag_userRoles</span>.</p></Card></div>;
     }
 
     function VolunteerApp({ user, data, save, onLogout }) {
