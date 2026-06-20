@@ -1,56 +1,35 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <script>
-    // Visible error catcher — shows errors on screen instead of a blank page
-    window.addEventListener("error", function(e) {
-      document.body.innerHTML =
-        '<div style="font-family:monospace;background:#fee;color:#900;padding:20px;white-space:pre-wrap;font-size:14px;">' +
-        '<b>ERROR DETECTED</b>\n\n' +
-        'Message: ' + e.message + '\n' +
-        'File: ' + e.filename + '\n' +
-        'Line: ' + e.lineno + ':' + e.colno +
-        '</div>';
-    });
-    window.addEventListener("unhandledrejection", function(e) {
-      document.body.innerHTML =
-        '<div style="font-family:monospace;background:#fee;color:#900;padding:20px;white-space:pre-wrap;font-size:14px;">' +
-        '<b>PROMISE ERROR</b>\n\n' +
-        String(e.reason) +
-        '</div>';
-    });
-  </script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <!-- PWA / home screen -->
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Zaenid Michis" />
-  
-  
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="theme-color" content="#0f172a" />
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
   <link rel="apple-touch-icon" sizes="192x192" href="icon-192.png">
   <title>Zaenid Michis</title>
-  <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- React 18 -->
   <script crossorigin src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
-  <!-- Babel (JSX in browser) — pinned to a known-stable version -->
   <script src="https://unpkg.com/@babel/standalone@7.24.7/babel.min.js"></script>
-  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     body { margin: 0; overscroll-behavior: none; background: #f8fafc; }
-    /* Prevent iOS double-tap zoom on inputs */
     input, select, textarea { font-size: 16px !important; }
+    @media print {
+      body * { visibility: hidden; }
+      #printArea, #printArea * { visibility: visible; }
+      #printArea { position: absolute; top: 0; left: 0; width: 100%; padding: 20px; }
+      .no-print { display: none !important; }
+    }
   </style>
-
 </head>
 <body>
   <div id="root"></div>
@@ -72,13 +51,16 @@
         appId: "1:754852396413:web:f64fa553126cc01e102014"
       });
     }
-    const firebaseDB = firebase.database();
+    const firebaseDB   = firebase.database();
+    const firebaseAuth = firebase.auth();
+
+    // The owner's email always has guaranteed Coordinator access,
+    // even before they're added to the People list.
+    const ADMIN_EMAIL = "explorerfta@gmail.com";
 
     // ──────────────────────────────────────────────────────────────
     // CONSTANTS
     // ──────────────────────────────────────────────────────────────
-    const DEFAULT_COORD_PIN = "1234";
-
     const CAT_ROUTINE_TASKS = [
       "Clean cage",
       "Change cat litter",
@@ -106,6 +88,7 @@
       new Date(d + "T12:00:00").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
     const fmtTime  = (iso) =>
       new Date(iso).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+    const normEmail = (e) => (e || "").trim().toLowerCase();
 
     // ──────────────────────────────────────────────────────────────
     // STORAGE  →  Firebase Realtime Database (shared across devices)
@@ -123,59 +106,97 @@
     };
 
     // ──────────────────────────────────────────────────────────────
-    // MAIN APP
+    // MAIN APP — handles Firebase Auth state + data loading
     // ──────────────────────────────────────────────────────────────
     function App() {
-      const [screen, setScreen] = useState("loading");
-      const [user,   setUser  ] = useState(null);
-      const [data,   setData  ] = useState({
-        coordPin: DEFAULT_COORD_PIN,
-        locations: [], cats: [], volunteers: [], assignments: [],
+      const [authState, setAuthState] = useState("loading"); // loading | signedOut | signedIn
+      const [authUser,  setAuthUser ] = useState(null);
+      const [person,    setPerson   ] = useState(null); // matched record from sag_people
+      const [data,      setData     ] = useState({
+        people: [], locations: [], cats: [], assignments: [],
       });
 
+      // Load shared app data once
+      const loadData = async () => {
+        const d = {
+          people:      (await db.get("sag_people"))      ?? [],
+          locations:   (await db.get("sag_locations"))   ?? [],
+          cats:        (await db.get("sag_cats"))         ?? [],
+          assignments: (await db.get("sag_assignments"))  ?? [],
+        };
+        setData(d);
+        return d;
+      };
+
       useEffect(() => {
-        (async () => {
-          const d = {
-            coordPin:    (await db.get("sag_coordPin"))    ?? DEFAULT_COORD_PIN,
-            locations:   (await db.get("sag_locations"))   ?? [],
-            cats:        (await db.get("sag_cats"))        ?? [],
-            volunteers:  (await db.get("sag_volunteers"))  ?? [],
-            assignments: (await db.get("sag_assignments")) ?? [],
-          };
-          setData(d);
-          setScreen("login");
-        })();
+        const unsub = firebaseAuth.onAuthStateChanged(async (u) => {
+          if (!u) {
+            setAuthUser(null); setPerson(null); setAuthState("signedOut");
+            return;
+          }
+          setAuthUser(u);
+          const d = await loadData();
+          const email = normEmail(u.email);
+          let match = d.people.find(p => normEmail(p.email) === email);
+
+          if (!match && email === normEmail(ADMIN_EMAIL)) {
+            // Guarantee the owner always has coordinator access,
+            // and silently register them in People if missing.
+            match = { id: uid(), name: u.displayName || "Coordinator", email: u.email, role: "coordinator", active: true };
+            const updated = [...d.people, match];
+            await db.set("sag_people", updated);
+            setData(p => ({ ...p, people: updated }));
+          }
+
+          if (!match) {
+            // Authenticated with Firebase but not yet added to People.
+            setPerson({ notRegistered: true, email: u.email });
+            setAuthState("signedIn");
+            return;
+          }
+          if (match.active === false) {
+            setPerson({ deactivated: true, email: u.email });
+            setAuthState("signedIn");
+            return;
+          }
+          setPerson(match);
+          setAuthState("signedIn");
+        });
+        return () => unsub();
       }, []);
 
       const save = async (key, value) => {
         const keyMap = {
-          coordPin: "sag_coordPin", locations: "sag_locations",
-          cats: "sag_cats", volunteers: "sag_volunteers", assignments: "sag_assignments",
+          people: "sag_people", locations: "sag_locations",
+          cats: "sag_cats", assignments: "sag_assignments",
         };
         setData(prev => ({ ...prev, [key]: value }));
         await db.set(keyMap[key], value);
       };
 
-      const login = (pin) => {
-        if (pin === data.coordPin) {
-          setUser({ role: "coordinator" }); setScreen("coordinator"); return true;
-        }
-        const vol = data.volunteers.find(v => v.pin === pin && v.active !== false);
-        if (vol) { setUser({ role: "volunteer", ...vol }); setScreen("volunteer"); return true; }
-        return false;
+      const refreshPerson = async () => {
+        const d = await loadData();
+        const email = normEmail(authUser.email);
+        const match = d.people.find(p => normEmail(p.email) === email);
+        if (match) setPerson(match);
       };
 
-      const logout = () => { setUser(null); setScreen("login"); };
+      const logout = () => firebaseAuth.signOut();
 
-      if (screen === "loading")     return <LoadingScreen />;
-      if (screen === "login")       return <LoginScreen onLogin={login} />;
-      if (screen === "coordinator") return <CoordApp data={data} save={save} onLogout={logout} />;
-      if (screen === "volunteer")   return <VolunteerApp user={user} data={data} save={save} onLogout={logout} />;
-      return null;
+      if (authState === "loading")   return <LoadingScreen />;
+      if (authState === "signedOut") return <LoginScreen />;
+
+      if (person?.notRegistered) return <NotRegisteredScreen email={person.email} onLogout={logout} />;
+      if (person?.deactivated)   return <DeactivatedScreen email={person.email} onLogout={logout} />;
+
+      if (person?.role === "coordinator") {
+        return <CoordApp authUser={authUser} person={person} data={data} save={save} onLogout={logout} onPersonRefresh={refreshPerson} />;
+      }
+      return <VolunteerApp authUser={authUser} person={person} data={data} save={save} onLogout={logout} onPersonRefresh={refreshPerson} />;
     }
 
     // ──────────────────────────────────────────────────────────────
-    // LOADING
+    // LOADING / GATE SCREENS
     // ──────────────────────────────────────────────────────────────
     function LoadingScreen() {
       return (
@@ -189,19 +210,74 @@
       );
     }
 
-    // ──────────────────────────────────────────────────────────────
-    // LOGIN
-    // ──────────────────────────────────────────────────────────────
-    function LoginScreen({ onLogin }) {
-      const [pin,   setPin  ] = useState("");
-      const [error, setError] = useState(false);
+    function NotRegisteredScreen({ email, onLogout }) {
+      return (
+        <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-6 text-center">
+          <div className="text-6xl mb-4">🙈</div>
+          <h1 className="text-white text-xl font-bold mb-2">Account not set up yet</h1>
+          <p className="text-slate-400 text-sm max-w-xs mb-1">
+            <span className="font-mono">{email}</span> signed in successfully, but hasn't been added to the People list yet.
+          </p>
+          <p className="text-slate-400 text-sm max-w-xs mb-6">Ask your coordinator to add you.</p>
+          <button onClick={onLogout} className="text-slate-300 text-sm border border-slate-600 px-4 py-2 rounded-lg">Sign out</button>
+        </div>
+      );
+    }
 
-      const submit = () => {
-        if (!onLogin(pin)) {
-          setError(true);
-          setTimeout(() => setError(false), 2000);
-          setPin("");
+    function DeactivatedScreen({ email, onLogout }) {
+      return (
+        <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-6 text-center">
+          <div className="text-6xl mb-4">⏸️</div>
+          <h1 className="text-white text-xl font-bold mb-2">Account inactive</h1>
+          <p className="text-slate-400 text-sm max-w-xs mb-6">
+            <span className="font-mono">{email}</span> has been deactivated. Contact your coordinator.
+          </p>
+          <button onClick={onLogout} className="text-slate-300 text-sm border border-slate-600 px-4 py-2 rounded-lg">Sign out</button>
+        </div>
+      );
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    // LOGIN  (Firebase email + password)
+    // ──────────────────────────────────────────────────────────────
+    function LoginScreen() {
+      const [email,    setEmail   ] = useState("");
+      const [pass,     setPass    ] = useState("");
+      const [error,    setError   ] = useState("");
+      const [busy,     setBusy    ] = useState(false);
+      const [resetMsg, setResetMsg] = useState("");
+
+      const submit = async () => {
+        setError(""); setResetMsg("");
+        if (!email.trim() || !pass) { setError("Enter your email and password."); return; }
+        setBusy(true);
+        try {
+          await firebaseAuth.signInWithEmailAndPassword(email.trim(), pass);
+        } catch (e) {
+          const map = {
+            "auth/invalid-email": "That email address looks invalid.",
+            "auth/user-not-found": "No account found with that email.",
+            "auth/wrong-password": "Incorrect password.",
+            "auth/invalid-credential": "Incorrect email or password.",
+            "auth/too-many-requests": "Too many attempts. Try again later.",
+            "auth/user-disabled": "This account has been disabled.",
+          };
+          setError(map[e.code] || "Couldn't sign in. Please try again.");
         }
+        setBusy(false);
+      };
+
+      const forgotPassword = async () => {
+        setError(""); setResetMsg("");
+        if (!email.trim()) { setError("Enter your email above first, then tap \"Forgot password?\""); return; }
+        setBusy(true);
+        try {
+          await firebaseAuth.sendPasswordResetEmail(email.trim());
+          setResetMsg("✅ Password reset email sent! Check your inbox.");
+        } catch (e) {
+          setError("Couldn't send reset email. Check the address and try again.");
+        }
+        setBusy(false);
       };
 
       return (
@@ -212,29 +288,41 @@
               <h1 className="text-3xl font-bold text-white tracking-tight">Zaenid Michis</h1>
               <p className="text-slate-400 mt-2 text-sm">Volunteer Task Manager</p>
             </div>
-            <div className="bg-white rounded-2xl p-6 shadow-2xl">
-              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Enter PIN</label>
-              <input
-                type="password"
-                inputMode="numeric"
-                value={pin}
-                onChange={e => { setPin(e.target.value); setError(false); }}
-                onKeyDown={e => e.key === "Enter" && submit()}
-                placeholder="••••"
-                className={`w-full border-2 rounded-xl px-4 py-4 text-2xl text-center tracking-widest font-mono focus:outline-none transition-colors ${
-                  error ? "border-red-400 bg-red-50" : "border-slate-200 focus:border-teal-500"
-                }`}
-                autoFocus
-              />
-              {error && <p className="text-red-500 text-sm text-center mt-2 font-medium">Invalid PIN — please try again</p>}
-              <button onClick={submit}
-                className="mt-4 w-full bg-slate-900 text-white font-semibold py-3.5 rounded-xl text-sm tracking-wide">
-                Sign In
+            <div className="bg-white rounded-2xl p-6 shadow-2xl space-y-3">
+              <div>
+                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Email</label>
+                <input
+                  type="email" autoCapitalize="none" autoCorrect="off"
+                  value={email} onChange={e => { setEmail(e.target.value); setError(""); setResetMsg(""); }}
+                  onKeyDown={e => e.key === "Enter" && submit()}
+                  placeholder="you@email.com"
+                  className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 text-base focus:outline-none focus:border-teal-500"
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Password</label>
+                <input
+                  type="password"
+                  value={pass} onChange={e => { setPass(e.target.value); setError(""); setResetMsg(""); }}
+                  onKeyDown={e => e.key === "Enter" && submit()}
+                  placeholder="••••••••"
+                  className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 text-base focus:outline-none focus:border-teal-500"
+                />
+              </div>
+
+              {error    && <p className="text-red-500 text-sm font-medium">{error}</p>}
+              {resetMsg && <p className="text-emerald-600 text-sm font-medium">{resetMsg}</p>}
+
+              <button onClick={submit} disabled={busy}
+                className="w-full bg-slate-900 text-white font-semibold py-3.5 rounded-xl text-sm tracking-wide disabled:opacity-50">
+                {busy ? "Please wait…" : "Sign In"}
+              </button>
+              <button onClick={forgotPassword} disabled={busy}
+                className="w-full text-teal-600 text-sm font-medium py-1">
+                Forgot password?
               </button>
             </div>
-            <p className="text-slate-600 text-xs text-center mt-4">
-              Default coordinator PIN: <span className="font-mono text-slate-400">1234</span>
-            </p>
           </div>
         </div>
       );
@@ -243,27 +331,27 @@
     // ──────────────────────────────────────────────────────────────
     // COORDINATOR APP
     // ──────────────────────────────────────────────────────────────
-    function CoordApp({ data, save, onLogout }) {
+    function CoordApp({ authUser, person, data, save, onLogout, onPersonRefresh }) {
       const [tab, setTab] = useState("today");
 
       const TABS = [
-        { id: "today",      icon: "📋", label: "Today"    },
-        { id: "assign",     icon: "✏️", label: "Assign"   },
-        { id: "cats",       icon: "🐱", label: "Cats"     },
-        { id: "locations",  icon: "🏠", label: "Places"   },
-        { id: "volunteers", icon: "👤", label: "People"   },
-        { id: "history",    icon: "📅", label: "History"  },
-        { id: "settings",   icon: "⚙️", label: "Settings" },
+        { id: "today",     icon: "📋", label: "Today"    },
+        { id: "assign",    icon: "✏️", label: "Assign"   },
+        { id: "cats",      icon: "🐱", label: "Cats"     },
+        { id: "locations", icon: "🏠", label: "Places"   },
+        { id: "people",    icon: "👤", label: "People"   },
+        { id: "history",   icon: "📅", label: "History"  },
+        { id: "settings",  icon: "⚙️", label: "Settings" },
       ];
 
       return (
         <div className="min-h-screen bg-slate-50 flex flex-col">
-          <header className="bg-slate-900 text-white px-4 py-3 flex items-center justify-between sticky top-0 z-10">
+          <header className="no-print bg-slate-900 text-white px-4 py-3 flex items-center justify-between sticky top-0 z-10">
             <div className="flex items-center gap-2">
               <span className="text-xl">🐾</span>
               <div>
                 <div className="font-bold text-sm leading-tight">Zaenid Michis</div>
-                <div className="text-slate-400 text-xs">Coordinator</div>
+                <div className="text-slate-400 text-xs">Coordinator · {person.name}</div>
               </div>
             </div>
             <button onClick={onLogout} className="text-slate-400 text-xs border border-slate-600 px-3 py-1.5 rounded-lg">
@@ -272,16 +360,16 @@
           </header>
 
           <main className="flex-1 overflow-auto pb-20">
-            {tab === "today"      && <TodayTab      data={data} save={save} />}
-            {tab === "assign"     && <AssignTab     data={data} save={save} />}
-            {tab === "cats"       && <CatsTab       data={data} save={save} />}
-            {tab === "locations"  && <LocationsTab  data={data} save={save} />}
-            {tab === "volunteers" && <VolunteersTab  data={data} save={save} />}
-            {tab === "history"    && <HistoryTab    data={data} />}
-            {tab === "settings"   && <SettingsTab   data={data} save={save} />}
+            {tab === "today"     && <TodayTab     data={data} save={save} />}
+            {tab === "assign"    && <AssignTab    data={data} save={save} />}
+            {tab === "cats"      && <CatsTab      data={data} save={save} />}
+            {tab === "locations" && <LocationsTab data={data} save={save} />}
+            {tab === "people"    && <PeopleTab    data={data} save={save} currentEmail={authUser.email} />}
+            {tab === "history"   && <HistoryTab   data={data} />}
+            {tab === "settings"  && <SettingsTab  data={data} save={save} authUser={authUser} />}
           </main>
 
-          <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex z-10">
+          <nav className="no-print fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex z-10">
             {TABS.map(t => (
               <button key={t.id} onClick={() => setTab(t.id)}
                 className={`flex-1 py-2 flex flex-col items-center gap-0.5 transition-colors min-w-0 ${
@@ -297,6 +385,50 @@
     }
 
     // ──────────────────────────────────────────────────────────────
+    // PRINT HELPER — builds a printable sheet and triggers window.print()
+    // ──────────────────────────────────────────────────────────────
+    function PrintButton({ label = "🖨️ Print", onPrint }) {
+      return (
+        <button onClick={onPrint}
+          className="no-print bg-slate-100 text-slate-700 text-xs font-semibold px-3 py-2 rounded-lg">
+          {label}
+        </button>
+      );
+    }
+
+    function buildPrintHTML({ title, subtitle, assignments, getPersonName }) {
+      const rows = assignments.map(a => {
+        const taskRows = a.tasks.map(t => `
+          <tr>
+            <td style="padding:4px 8px;border-bottom:1px solid #eee;">${t.completedAt ? "✓" : "☐"}</td>
+            <td style="padding:4px 8px;border-bottom:1px solid #eee;">${t.catName ? `[${t.catName}] ` : ""}${t.name}</td>
+          </tr>`).join("");
+        return `
+          <div style="margin-bottom:18px;page-break-inside:avoid;">
+            <div style="font-weight:bold;font-size:14px;margin-bottom:4px;">
+              ${a.shift === "AM" ? "☀️ Morning" : "🌙 Afternoon"} — ${getPersonName(a.personId)}
+            </div>
+            <table style="width:100%;border-collapse:collapse;font-size:13px;">${taskRows}</table>
+          </div>`;
+      }).join("");
+      return `
+        <div id="printArea">
+          <h2 style="margin-bottom:2px;">${title}</h2>
+          <p style="color:#666;margin-top:0;margin-bottom:16px;">${subtitle}</p>
+          ${rows || "<p>No assignments.</p>"}
+        </div>`;
+    }
+
+    function printAssignments(opts) {
+      const old = document.getElementById("printArea");
+      if (old) old.remove();
+      const div = document.createElement("div");
+      div.innerHTML = buildPrintHTML(opts);
+      document.body.appendChild(div.firstElementChild);
+      window.print();
+    }
+
+    // ──────────────────────────────────────────────────────────────
     // TODAY TAB
     // ──────────────────────────────────────────────────────────────
     function TodayTab({ data, save }) {
@@ -305,24 +437,35 @@
         .filter(a => a.date === tday)
         .sort((a, b) => a.shift.localeCompare(b.shift));
 
-      const getVol = id => data.volunteers.find(v => v.id === id);
+      const getPerson = id => data.people.find(p => p.id === id);
+      const getPersonName = id => getPerson(id)?.name ?? "Unknown";
 
       const deleteAssignment = async (id) => {
         if (!window.confirm("Delete this assignment? This cannot be undone.")) return;
         await save("assignments", data.assignments.filter(a => a.id !== id));
       };
 
+      const doPrint = () => printAssignments({
+        title: "Zaenid Michis — Today's Tasks",
+        subtitle: fmtDate(tday),
+        assignments: todayAsgns,
+        getPersonName,
+      });
+
       return (
         <div className="p-4 space-y-4">
           <div className="flex items-baseline justify-between">
             <h2 className="text-base font-bold text-slate-800">{fmtDate(tday)}</h2>
-            <span className="text-xs text-slate-400">{todayAsgns.length} assignment{todayAsgns.length !== 1 ? "s" : ""}</span>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-slate-400">{todayAsgns.length} assignment{todayAsgns.length !== 1 ? "s" : ""}</span>
+              {todayAsgns.length > 0 && <PrintButton onPrint={doPrint} />}
+            </div>
           </div>
 
           {todayAsgns.length === 0
             ? <Empty icon="📋" title="No assignments today" subtitle="Go to Assign to create some." />
             : todayAsgns.map(a => {
-              const vol  = getVol(a.volunteerId);
+              const person = getPerson(a.personId);
               const done = a.tasks.filter(t => t.completedAt).length;
               const pct  = a.tasks.length ? Math.round(done / a.tasks.length * 100) : 0;
               const isAM = a.shift === "AM";
@@ -333,7 +476,7 @@
                       <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${isAM ? "bg-amber-500 text-white" : "bg-indigo-600 text-white"}`}>
                         {isAM ? "☀️ AM" : "🌙 PM"}
                       </span>
-                      <span className="font-semibold text-slate-800 text-sm">{vol?.name ?? "Unknown"}</span>
+                      <span className="font-semibold text-slate-800 text-sm">{person?.name ?? "Unknown"}</span>
                     </div>
                     <div className="flex items-center gap-3">
                       <span className={`text-sm font-bold ${pct === 100 ? "text-emerald-600" : "text-slate-500"}`}>{done}/{a.tasks.length}</span>
@@ -375,7 +518,7 @@
     function AssignTab({ data, save }) {
       const [date,       setDate      ] = useState(todayISO());
       const [shift,      setShift     ] = useState("AM");
-      const [volId,      setVolId     ] = useState("");
+      const [personId,   setPersonId  ] = useState("");
       const [selCats,    setSelCats   ] = useState([]);
       const [selLocs,    setSelLocs   ] = useState([]);
       const [specials,   setSpecials  ] = useState([]);
@@ -419,19 +562,18 @@
       };
 
       const handleSave = async () => {
-        if (!volId) { setFlash({ ok: false, msg: "Please select a volunteer." }); return; }
+        if (!personId) { setFlash({ ok: false, msg: "Please select a volunteer." }); return; }
         const tasks = buildTasks();
         if (!tasks.length) { setFlash({ ok: false, msg: "Add at least one cat, location, or special task." }); return; }
-        const vol = data.volunteers.find(v => v.id === volId);
-        const asgn = { id: uid(), date, shift, volunteerId: volId, volunteerName: vol?.name ?? "", tasks, createdAt: new Date().toISOString() };
+        const asgn = { id: uid(), date, shift, personId, tasks, createdAt: new Date().toISOString() };
         await save("assignments", [...data.assignments, asgn]);
-        setSelCats([]); setSelLocs([]); setSpecials([]); setVolId("");
+        setSelCats([]); setSelLocs([]); setSpecials([]); setPersonId("");
         setFlash({ ok: true, msg: "Assignment saved!" });
         setTimeout(() => setFlash(null), 3000);
       };
 
-      const activeCats = data.cats.filter(c => c.active !== false);
-      const activeVols = data.volunteers.filter(v => v.active !== false);
+      const activeCats   = data.cats.filter(c => c.active !== false);
+      const activePeople = data.people.filter(p => p.active !== false);
 
       return (
         <div className="p-4 space-y-4">
@@ -466,9 +608,9 @@
               </div>
               <div>
                 <Label>Volunteer</Label>
-                <select value={volId} onChange={e => setVolId(e.target.value)} className={inputCls}>
+                <select value={personId} onChange={e => setPersonId(e.target.value)} className={inputCls}>
                   <option value="">— Select volunteer —</option>
-                  {activeVols.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
+                  {activePeople.map(p => <option key={p.id} value={p.id}>{p.name}{p.role === "coordinator" ? " (Coordinator)" : ""}</option>)}
                 </select>
               </div>
             </div>
@@ -555,12 +697,13 @@
     }
 
     // ──────────────────────────────────────────────────────────────
-    // CATS TAB
+    // CATS TAB  (Archive vs permanent Delete)
     // ──────────────────────────────────────────────────────────────
     function CatsTab({ data, save }) {
       const [mode,    setMode   ] = useState("list");
       const [editing, setEditing] = useState(null);
       const [form,    setForm   ] = useState({});
+      const [showArchived, setShowArchived] = useState(false);
 
       const openNew  = () => { setForm({ name: "", locationId: "", cageNumber: "", status: "resident", medications: [], notes: "", active: true }); setEditing("new"); setMode("form"); };
       const openEdit = (cat) => { setForm({ ...cat, medications: cat.medications ? [...cat.medications] : [] }); setEditing(cat); setMode("form"); };
@@ -580,12 +723,18 @@
         close();
       };
 
-      const archive = async (cat) => {
+      const archiveCat = async (cat) => {
         await save("cats", data.cats.map(c => c.id === cat.id ? { ...c, active: !c.active } : c));
+      };
+
+      const deleteCat = async (cat) => {
+        if (!window.confirm(`Permanently delete "${cat.name}"? This removes their profile completely and cannot be undone. Past task history will keep their name, but they'll no longer be selectable.`)) return;
+        await save("cats", data.cats.filter(c => c.id !== cat.id));
       };
 
       const activeCats   = data.cats.filter(c => c.active !== false);
       const archivedCats = data.cats.filter(c => c.active === false);
+      const shownCats    = showArchived ? archivedCats : activeCats;
       const getLocName   = id => data.locations.find(l => l.id === id)?.name ?? "—";
       const statusColor  = { resident: "bg-emerald-100 text-emerald-700", feral: "bg-red-100 text-red-700", foster: "bg-violet-100 text-violet-700" };
 
@@ -651,12 +800,24 @@
       return (
         <div className="p-4 space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-base font-bold text-slate-800">Cats ({activeCats.length})</h2>
+            <h2 className="text-base font-bold text-slate-800">Cats ({shownCats.length})</h2>
             <button onClick={openNew} className="bg-slate-900 text-white text-xs px-4 py-2 rounded-xl font-medium">+ Add Cat</button>
           </div>
-          {activeCats.length === 0
-            ? <Empty icon="🐱" title="No cats added yet" subtitle="Tap Add Cat to get started." />
-            : activeCats.map(cat => (
+
+          <div className="flex rounded-xl overflow-hidden border border-slate-200">
+            <button onClick={() => setShowArchived(false)}
+              className={`flex-1 py-2 text-xs font-bold ${!showArchived ? "bg-slate-900 text-white" : "bg-white text-slate-500"}`}>
+              Active ({activeCats.length})
+            </button>
+            <button onClick={() => setShowArchived(true)}
+              className={`flex-1 py-2 text-xs font-bold ${showArchived ? "bg-slate-900 text-white" : "bg-white text-slate-500"}`}>
+              Archived ({archivedCats.length})
+            </button>
+          </div>
+
+          {shownCats.length === 0
+            ? <Empty icon="🐱" title={showArchived ? "No archived cats" : "No cats added yet"} subtitle={showArchived ? "" : "Tap Add Cat to get started."} />
+            : shownCats.map(cat => (
               <div key={cat.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">
@@ -674,15 +835,13 @@
                   </div>
                   <div className="flex flex-col items-end gap-1.5 ml-3 flex-shrink-0">
                     <button onClick={() => openEdit(cat)} className="text-xs text-teal-600 font-medium">Edit</button>
-                    <button onClick={() => archive(cat)} className="text-xs text-slate-400">Archive</button>
+                    <button onClick={() => archiveCat(cat)} className="text-xs text-slate-400">{showArchived ? "Unarchive" : "Archive"}</button>
+                    <button onClick={() => deleteCat(cat)} className="text-xs text-red-400">Delete</button>
                   </div>
                 </div>
               </div>
             ))
           }
-          {archivedCats.length > 0 && (
-            <p className="text-center text-xs text-slate-400">{archivedCats.length} archived cat{archivedCats.length > 1 ? "s" : ""} not shown.</p>
-          )}
         </div>
       );
     }
@@ -771,53 +930,73 @@
     }
 
     // ──────────────────────────────────────────────────────────────
-    // VOLUNTEERS TAB
+    // PEOPLE TAB  (roles, archive vs delete)
     // ──────────────────────────────────────────────────────────────
-    function VolunteersTab({ data, save }) {
-      const [mode,     setMode    ] = useState("list");
-      const [editing,  setEditing ] = useState(null);
-      const [form,     setForm    ] = useState({});
-      const [showPins, setShowPins] = useState({});
-      const [err,      setErr     ] = useState("");
+    function PeopleTab({ data, save, currentEmail }) {
+      const [mode,    setMode   ] = useState("list");
+      const [editing, setEditing] = useState(null);
+      const [form,    setForm   ] = useState({});
+      const [err,     setErr    ] = useState("");
+      const [showArchived, setShowArchived] = useState(false);
 
-      const openNew  = () => { setForm({ name: "", pin: "", active: true }); setEditing("new"); setMode("form"); setErr(""); };
-      const openEdit = (v) => { setForm({ ...v }); setEditing(v); setMode("form"); setErr(""); };
+      const openNew  = () => { setForm({ name: "", email: "", role: "volunteer", active: true }); setEditing("new"); setMode("form"); setErr(""); };
+      const openEdit = (p) => { setForm({ ...p }); setEditing(p); setMode("form"); setErr(""); };
       const close    = () => { setMode("list"); setEditing(null); setForm({}); setErr(""); };
       const setF     = (k, v) => setForm(p => ({ ...p, [k]: v }));
 
       const handleSave = async () => {
-        if (!form.name?.trim()) { setErr("Name is required."); return; }
-        if (!form.pin?.trim() || form.pin.length < 4) { setErr("PIN must be at least 4 characters."); return; }
-        if (form.pin === data.coordPin) { setErr("That PIN is reserved for the coordinator."); return; }
-        const conflict = data.volunteers.find(v => v.pin === form.pin && v.id !== form.id);
-        if (conflict) { setErr(`PIN is already used by ${conflict.name}.`); return; }
-        const vols = editing === "new"
-          ? [...data.volunteers, { ...form, id: uid() }]
-          : data.volunteers.map(v => v.id === editing.id ? { ...form, id: v.id } : v);
-        await save("volunteers", vols);
+        if (!form.name?.trim())  { setErr("Name is required."); return; }
+        if (!form.email?.trim()) { setErr("Email is required."); return; }
+        const email = normEmail(form.email);
+        const conflict = data.people.find(p => normEmail(p.email) === email && p.id !== form.id);
+        if (conflict) { setErr(`That email is already used by ${conflict.name}.`); return; }
+        const record = { ...form, email: form.email.trim() };
+        const people = editing === "new"
+          ? [...data.people, { ...record, id: uid() }]
+          : data.people.map(p => p.id === editing.id ? { ...record, id: p.id } : p);
+        await save("people", people);
         close();
       };
 
-      const toggleActive = async (vol) => {
-        await save("volunteers", data.volunteers.map(v => v.id === vol.id ? { ...v, active: !v.active } : v));
+      const archivePerson = async (p) => {
+        await save("people", data.people.map(x => x.id === p.id ? { ...x, active: !x.active } : x));
       };
 
-      const activeVols   = data.volunteers.filter(v => v.active !== false);
-      const inactiveVols = data.volunteers.filter(v => v.active === false);
+      const deletePerson = async (p) => {
+        if (normEmail(p.email) === normEmail(ADMIN_EMAIL)) {
+          alert("This is the account owner — it can't be deleted from here.");
+          return;
+        }
+        if (!window.confirm(`Permanently remove ${p.name} from People? This does NOT delete their Firebase login — only their access to this app's data.`)) return;
+        await save("people", data.people.filter(x => x.id !== p.id));
+      };
+
+      const activePeople   = data.people.filter(p => p.active !== false);
+      const archivedPeople = data.people.filter(p => p.active === false);
+      const shownPeople    = showArchived ? archivedPeople : activePeople;
 
       if (mode === "form") {
         return (
           <div className="p-4 space-y-4">
-            <BackBar onBack={close} title={editing === "new" ? "Add Volunteer" : "Edit Volunteer"} />
+            <BackBar onBack={close} title={editing === "new" ? "Add Person" : "Edit Person"} />
             <Card>
               <div className="space-y-3">
                 <Field label="Full Name *" value={form.name || ""} onChange={v => setF("name", v)} placeholder="e.g. Maria González" />
-                <Field label="PIN * (min. 4 characters)" value={form.pin || ""} onChange={v => setF("pin", v)} placeholder="e.g. 5678" type="password" />
-                <p className="text-xs text-slate-400">Each volunteer has a unique PIN. They enter it to see only their own tasks.</p>
+                <Field label="Email *" value={form.email || ""} onChange={v => setF("email", v)} placeholder="maria@email.com" type="email" />
+                <div>
+                  <Label>Role</Label>
+                  <select value={form.role || "volunteer"} onChange={e => setF("role", e.target.value)} className={inputCls}>
+                    <option value="volunteer">Volunteer</option>
+                    <option value="coordinator">Coordinator</option>
+                  </select>
+                </div>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  Adding someone here does NOT create their login. Create their Firebase account first (with a temporary password), then add them here using the same email.
+                </p>
                 {err && <div className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-xl">{err}</div>}
               </div>
             </Card>
-            <button onClick={handleSave} className="w-full bg-slate-900 text-white font-semibold py-4 rounded-2xl text-sm">Save Volunteer</button>
+            <button onClick={handleSave} className="w-full bg-slate-900 text-white font-semibold py-4 rounded-2xl text-sm">Save Person</button>
           </div>
         );
       }
@@ -825,50 +1004,68 @@
       return (
         <div className="p-4 space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-base font-bold text-slate-800">Volunteers ({activeVols.length})</h2>
+            <h2 className="text-base font-bold text-slate-800">People ({shownPeople.length})</h2>
             <button onClick={openNew} className="bg-slate-900 text-white text-xs px-4 py-2 rounded-xl font-medium">+ Add</button>
           </div>
-          {activeVols.length === 0
-            ? <Empty icon="👤" title="No volunteers yet" subtitle="Add volunteers and set their individual PINs." />
-            : activeVols.map(vol => (
-              <div key={vol.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-semibold text-slate-800">{vol.name}</div>
-                    <div className="text-sm text-slate-400 mt-0.5 font-mono">
-                      PIN: {showPins[vol.id] ? vol.pin : "••••"}
-                      <button onClick={() => setShowPins(p => ({ ...p, [vol.id]: !p[vol.id] }))}
-                        className="ml-2 text-xs text-teal-500 font-sans font-medium">
-                        {showPins[vol.id] ? "hide" : "reveal"}
-                      </button>
+
+          <div className="flex rounded-xl overflow-hidden border border-slate-200">
+            <button onClick={() => setShowArchived(false)}
+              className={`flex-1 py-2 text-xs font-bold ${!showArchived ? "bg-slate-900 text-white" : "bg-white text-slate-500"}`}>
+              Active ({activePeople.length})
+            </button>
+            <button onClick={() => setShowArchived(true)}
+              className={`flex-1 py-2 text-xs font-bold ${showArchived ? "bg-slate-900 text-white" : "bg-white text-slate-500"}`}>
+              Archived ({archivedPeople.length})
+            </button>
+          </div>
+
+          {shownPeople.length === 0
+            ? <Empty icon="👤" title={showArchived ? "No archived people" : "No people yet"} subtitle={showArchived ? "" : "Add coordinators and volunteers here."} />
+            : shownPeople.map(p => {
+              const isMe   = normEmail(p.email) === normEmail(currentEmail);
+              const isOwner = normEmail(p.email) === normEmail(ADMIN_EMAIL);
+              return (
+                <div key={p.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="min-w-0">
+                      <div className="font-semibold text-slate-800 flex items-center gap-1.5">
+                        {p.name} {isMe && <span className="text-xs text-teal-600 font-normal">(you)</span>}
+                      </div>
+                      <div className="text-sm text-slate-400 mt-0.5 truncate">{p.email}</div>
+                      <span className={`inline-block mt-1.5 text-xs px-2.5 py-0.5 rounded-full font-medium capitalize ${p.role === "coordinator" ? "bg-indigo-100 text-indigo-700" : "bg-slate-100 text-slate-600"}`}>
+                        {p.role}
+                      </span>
+                    </div>
+                    <div className="flex flex-col items-end gap-1.5 ml-3 flex-shrink-0">
+                      <button onClick={() => openEdit(p)} className="text-xs text-teal-600 font-medium">Edit</button>
+                      {!isOwner && <button onClick={() => archivePerson(p)} className="text-xs text-slate-400">{showArchived ? "Unarchive" : "Archive"}</button>}
+                      {!isOwner && <button onClick={() => deletePerson(p)} className="text-xs text-red-400">Delete</button>}
                     </div>
                   </div>
-                  <div className="flex flex-col items-end gap-1.5 ml-3">
-                    <button onClick={() => openEdit(vol)} className="text-xs text-teal-600 font-medium">Edit</button>
-                    <button onClick={() => toggleActive(vol)} className="text-xs text-slate-400">Deactivate</button>
-                  </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           }
-          {inactiveVols.length > 0 && (
-            <p className="text-center text-xs text-slate-400 mt-1">
-              {inactiveVols.length} inactive volunteer{inactiveVols.length > 1 ? "s" : ""} not shown.
-            </p>
-          )}
         </div>
       );
     }
 
     // ──────────────────────────────────────────────────────────────
-    // HISTORY TAB
+    // HISTORY TAB  (with print)
     // ──────────────────────────────────────────────────────────────
     function HistoryTab({ data }) {
       const [date, setDate] = useState(todayISO());
       const asgns = data.assignments
         .filter(a => a.date === date)
         .sort((a, b) => a.shift.localeCompare(b.shift));
-      const getVol = id => data.volunteers.find(v => v.id === id)?.name ?? "Unknown";
+      const getPersonName = id => data.people.find(p => p.id === id)?.name ?? "Unknown";
+
+      const doPrint = () => printAssignments({
+        title: "Zaenid Michis — Task History",
+        subtitle: fmtDate(date),
+        assignments: asgns,
+        getPersonName,
+      });
 
       return (
         <div className="p-4 space-y-4">
@@ -877,6 +1074,13 @@
             <input type="date" value={date} onChange={e => setDate(e.target.value)}
               className="border border-slate-200 rounded-xl px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 bg-white" />
           </div>
+
+          {asgns.length > 0 && (
+            <div className="flex justify-end">
+              <PrintButton label="🖨️ Print this day" onPrint={doPrint} />
+            </div>
+          )}
+
           {asgns.length === 0
             ? <Empty icon="📅" title="No assignments found" subtitle={`Nothing recorded for ${fmtDate(date)}.`} />
             : asgns.map(a => {
@@ -888,7 +1092,7 @@
                   <div className={`px-4 py-3 flex items-center justify-between ${isAM ? "bg-amber-50 border-b border-amber-100" : "bg-indigo-50 border-b border-indigo-100"}`}>
                     <div className="flex items-center gap-2">
                       <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${isAM ? "bg-amber-500 text-white" : "bg-indigo-600 text-white"}`}>{a.shift}</span>
-                      <span className="font-semibold text-slate-800 text-sm">{getVol(a.volunteerId)}</span>
+                      <span className="font-semibold text-slate-800 text-sm">{getPersonName(a.personId)}</span>
                     </div>
                     <span className={`text-sm font-bold ${pct === 100 ? "text-emerald-600" : "text-slate-500"}`}>{done}/{a.tasks.length} done</span>
                   </div>
@@ -915,40 +1119,80 @@
     }
 
     // ──────────────────────────────────────────────────────────────
-    // SETTINGS TAB
+    // SETTINGS TAB  (change password, danger zone)
     // ──────────────────────────────────────────────────────────────
-    function SettingsTab({ data, save }) {
-      const [newPin,  setNewPin ] = useState("");
+    function SettingsTab({ data, save, authUser }) {
+      const [newPass, setNewPass] = useState("");
       const [confirm, setConfirm] = useState("");
       const [msg,     setMsg    ] = useState(null);
+      const [busy,    setBusy   ] = useState(false);
+      const [confirmText, setConfirmText] = useState("");
+      const [dangerMsg, setDangerMsg] = useState(null);
 
-      const handleChange = async () => {
-        if (newPin.length < 4) { setMsg({ ok: false, text: "PIN must be at least 4 characters." }); return; }
-        if (newPin !== confirm) { setMsg({ ok: false, text: "PINs do not match." }); return; }
-        const conflict = data.volunteers.find(v => v.pin === newPin);
-        if (conflict) { setMsg({ ok: false, text: `That PIN is already used by ${conflict.name}.` }); return; }
-        await save("coordPin", newPin);
-        setNewPin(""); setConfirm("");
-        setMsg({ ok: true, text: "Coordinator PIN updated successfully!" });
-        setTimeout(() => setMsg(null), 3000);
+      const changePassword = async () => {
+        setMsg(null);
+        if (newPass.length < 6) { setMsg({ ok: false, text: "Password must be at least 6 characters." }); return; }
+        if (newPass !== confirm) { setMsg({ ok: false, text: "Passwords do not match." }); return; }
+        setBusy(true);
+        try {
+          await authUser.updatePassword(newPass);
+          setNewPass(""); setConfirm("");
+          setMsg({ ok: true, text: "Password updated successfully!" });
+        } catch (e) {
+          if (e.code === "auth/requires-recent-login") {
+            try {
+              await firebaseAuth.sendPasswordResetEmail(authUser.email);
+              setMsg({ ok: true, text: "For security, please use the password reset email we just sent you instead." });
+            } catch {
+              setMsg({ ok: false, text: "Couldn't update password. Please sign out and sign back in, then try again." });
+            }
+          } else {
+            setMsg({ ok: false, text: "Couldn't update password. Try again." });
+          }
+        }
+        setBusy(false);
+      };
+
+      const wipeAllAssignments = async () => {
+        if (confirmText !== "DELETE") { setDangerMsg("Type DELETE in the box to confirm."); return; }
+        await save("assignments", []);
+        setConfirmText("");
+        setDangerMsg("✅ All assignment history has been deleted.");
       };
 
       return (
         <div className="p-4 space-y-4">
           <h2 className="text-base font-bold text-slate-800">Settings</h2>
-          <Card title="🔐 Change Coordinator PIN">
+
+          <Card title="🔐 Change My Password">
             <div className="space-y-3">
-              <Field label="New PIN" value={newPin} onChange={setNewPin} type="password" placeholder="At least 4 characters" />
-              <Field label="Confirm new PIN" value={confirm} onChange={setConfirm} type="password" placeholder="Repeat to confirm" />
+              <Field label="New password (min. 6 characters)" value={newPass} onChange={setNewPass} type="password" placeholder="New password" />
+              <Field label="Confirm new password" value={confirm} onChange={setConfirm} type="password" placeholder="Repeat to confirm" />
               {msg && (
                 <div className={`text-sm px-3 py-2 rounded-xl ${msg.ok ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-600"}`}>{msg.text}</div>
               )}
-              <button onClick={handleChange} className="w-full bg-slate-900 text-white font-semibold py-3 rounded-xl text-sm">Update PIN</button>
+              <button onClick={changePassword} disabled={busy}
+                className="w-full bg-slate-900 text-white font-semibold py-3 rounded-xl text-sm disabled:opacity-50">
+                {busy ? "Updating…" : "Update Password"}
+              </button>
             </div>
           </Card>
+
           <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4 text-sm text-amber-800 leading-relaxed">
-            <strong>💡 How to share access:</strong> Share this app's URL with your volunteers and give each one their PIN privately. They will only see their own tasks. Keep the coordinator PIN secret.
+            <strong>💡 Adding new people:</strong> Create their login in the Firebase console first with a temporary password, then add them in the People tab using the exact same email. They can change their password here once they sign in.
           </div>
+
+          <Card title="⚠️ Danger Zone">
+            <p className="text-sm text-slate-500 mb-3">
+              This permanently deletes <strong>all</strong> assignment history (every day, every volunteer). Cats, locations, and people are not affected. This cannot be undone.
+            </p>
+            <Field label='Type "DELETE" to confirm' value={confirmText} onChange={setConfirmText} placeholder="DELETE" />
+            {dangerMsg && <p className="text-sm text-red-600 mt-2">{dangerMsg}</p>}
+            <button onClick={wipeAllAssignments}
+              className="w-full bg-red-50 text-red-600 border border-red-200 font-semibold py-3 rounded-xl text-sm mt-3">
+              Delete All Assignment History
+            </button>
+          </Card>
         </div>
       );
     }
@@ -956,10 +1200,11 @@
     // ──────────────────────────────────────────────────────────────
     // VOLUNTEER APP
     // ──────────────────────────────────────────────────────────────
-    function VolunteerApp({ user, data, save, onLogout }) {
+    function VolunteerApp({ authUser, person, data, save, onLogout }) {
+      const [showSettings, setShowSettings] = useState(false);
       const tday = todayISO();
       const myAsgns = data.assignments
-        .filter(a => a.date === tday && a.volunteerId === user.id)
+        .filter(a => a.date === tday && a.personId === person.id)
         .sort((a, b) => a.shift.localeCompare(b.shift));
 
       const markTask = async (aId, tId) => {
@@ -985,6 +1230,10 @@
         return { catGroups: Object.values(catMap), other };
       };
 
+      if (showSettings) {
+        return <VolunteerSettings authUser={authUser} onBack={() => setShowSettings(false)} onLogout={onLogout} />;
+      }
+
       return (
         <div className="min-h-screen bg-slate-50 flex flex-col">
           <header className="bg-slate-900 text-white px-4 py-3 flex items-center justify-between sticky top-0 z-10">
@@ -992,12 +1241,13 @@
               <span className="text-xl">🐾</span>
               <div>
                 <div className="font-bold text-sm leading-tight">Zaenid Michis</div>
-                <div className="text-slate-400 text-xs">Hi, {user.name}!</div>
+                <div className="text-slate-400 text-xs">Hi, {person.name}!</div>
               </div>
             </div>
-            <button onClick={onLogout} className="text-slate-400 text-xs border border-slate-600 px-3 py-1.5 rounded-lg">
-              Sign out
-            </button>
+            <div className="flex items-center gap-2">
+              <button onClick={() => setShowSettings(true)} className="text-slate-400 text-xs border border-slate-600 px-3 py-1.5 rounded-lg">⚙️</button>
+              <button onClick={onLogout} className="text-slate-400 text-xs border border-slate-600 px-3 py-1.5 rounded-lg">Sign out</button>
+            </div>
           </header>
 
           <main className="flex-1 p-4 space-y-4">
@@ -1064,6 +1314,62 @@
                 );
               })
             )}
+          </main>
+        </div>
+      );
+    }
+
+    function VolunteerSettings({ authUser, onBack, onLogout }) {
+      const [newPass, setNewPass] = useState("");
+      const [confirm, setConfirm] = useState("");
+      const [msg,     setMsg    ] = useState(null);
+      const [busy,    setBusy   ] = useState(false);
+
+      const changePassword = async () => {
+        setMsg(null);
+        if (newPass.length < 6) { setMsg({ ok: false, text: "Password must be at least 6 characters." }); return; }
+        if (newPass !== confirm) { setMsg({ ok: false, text: "Passwords do not match." }); return; }
+        setBusy(true);
+        try {
+          await authUser.updatePassword(newPass);
+          setNewPass(""); setConfirm("");
+          setMsg({ ok: true, text: "Password updated successfully!" });
+        } catch (e) {
+          if (e.code === "auth/requires-recent-login") {
+            try {
+              await firebaseAuth.sendPasswordResetEmail(authUser.email);
+              setMsg({ ok: true, text: "For security, please use the password reset email we just sent you instead." });
+            } catch {
+              setMsg({ ok: false, text: "Couldn't update password. Sign out, sign back in, then try again." });
+            }
+          } else {
+            setMsg({ ok: false, text: "Couldn't update password. Try again." });
+          }
+        }
+        setBusy(false);
+      };
+
+      return (
+        <div className="min-h-screen bg-slate-50 flex flex-col">
+          <header className="bg-slate-900 text-white px-4 py-3 flex items-center gap-3 sticky top-0 z-10">
+            <button onClick={onBack} className="text-slate-300 text-sm">← Back</button>
+            <span className="font-bold text-sm">My Settings</span>
+          </header>
+          <main className="flex-1 p-4">
+            <Card title="🔐 Change My Password">
+              <div className="space-y-3">
+                <Field label="New password (min. 6 characters)" value={newPass} onChange={setNewPass} type="password" placeholder="New password" />
+                <Field label="Confirm new password" value={confirm} onChange={setConfirm} type="password" placeholder="Repeat to confirm" />
+                {msg && (
+                  <div className={`text-sm px-3 py-2 rounded-xl ${msg.ok ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-600"}`}>{msg.text}</div>
+                )}
+                <button onClick={changePassword} disabled={busy}
+                  className="w-full bg-slate-900 text-white font-semibold py-3 rounded-xl text-sm disabled:opacity-50">
+                  {busy ? "Updating…" : "Update Password"}
+                </button>
+              </div>
+            </Card>
+            <button onClick={onLogout} className="w-full mt-4 text-slate-500 text-sm font-medium py-2">Sign out</button>
           </main>
         </div>
       );
