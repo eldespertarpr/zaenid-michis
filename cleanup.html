@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Limpieza — Zaenid Michis</title>
+  <style>
+    body { font-family: monospace; background:#0f172a; color:#fff; padding:24px; line-height:1.6; }
+    .ok   { color:#34d399; }
+    .bad  { color:#f87171; }
+    a { color:#5eead4; }
+  </style>
+</head>
+<body>
+  <h2>🧹 Limpiando service workers viejos…</h2>
+  <div id="log">Iniciando…</div>
+
+  <script>
+    const log = (msg, cls) => {
+      const p = document.createElement("div");
+      if (cls) p.className = cls;
+      p.textContent = msg;
+      document.getElementById("log").appendChild(p);
+    };
+
+    async function cleanup() {
+      // 1. Unregister all service workers for this origin
+      if ("serviceWorker" in navigator) {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        if (regs.length === 0) {
+          log("No había service workers registrados.", "ok");
+        } else {
+          for (const reg of regs) {
+            await reg.unregister();
+            log("✅ Service worker eliminado: " + (reg.scope || "?"), "ok");
+          }
+        }
+      }
+
+      // 2. Delete all caches
+      if ("caches" in window) {
+        const keys = await caches.keys();
+        if (keys.length === 0) {
+          log("No había caches guardados.", "ok");
+        } else {
+          for (const key of keys) {
+            await caches.delete(key);
+            log("✅ Cache eliminado: " + key, "ok");
+          }
+        }
+      }
+
+      log("");
+      log("🎉 ¡Limpieza completa!", "ok");
+      log("");
+      log("Ahora toca este link para abrir la app:");
+      const a = document.createElement("a");
+      a.href = "./index.html?fresh=" + Date.now();
+      a.textContent = "→ Abrir Zaenid Michis";
+      a.style.fontSize = "20px";
+      a.style.display = "block";
+      a.style.marginTop = "10px";
+      document.getElementById("log").appendChild(a);
+    }
+
+    cleanup().catch(e => log("Error: " + e.message, "bad"));
+  </script>
+</body>
+</html>
