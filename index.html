@@ -54,9 +54,26 @@
     const firebaseDB   = firebase.database();
     const firebaseAuth = firebase.auth();
 
-    // The owner's email always has guaranteed Coordinator access,
-    // even before they're added to the People list.
-    const ADMIN_EMAIL = "explorerfta@gmail.com";
+    // Pre-seeded people — indexed by Firebase UID.
+    // These two accounts always exist and can never be removed from within the app.
+    const SEED_PEOPLE = {
+      "A1kGcYM92TS8uiQQojDhRunsYSF3": {
+        uid: "A1kGcYM92TS8uiQQojDhRunsYSF3",
+        name: "Richard",
+        email: "explorerfta@gmail.com",
+        role: "coordinator",
+        active: true,
+        protected: true,
+      },
+      "ZN34jUTRbgPOTQBdsipQEEKKFAh1": {
+        uid: "ZN34jUTRbgPOTQBdsipQEEKKFAh1",
+        name: "Trizzy",
+        email: "trizzycat@hotmail.com",
+        role: "coordinator",
+        active: true,
+        protected: true,
+      },
+    };
 
     // ──────────────────────────────────────────────────────────────
     // CONSTANTS
@@ -106,23 +123,30 @@
     };
 
     // ──────────────────────────────────────────────────────────────
-    // MAIN APP — handles Firebase Auth state + data loading
+    // MAIN APP — UID-based auth + data loading
     // ──────────────────────────────────────────────────────────────
     function App() {
-      const [authState, setAuthState] = useState("loading"); // loading | signedOut | signedIn
+      const [authState, setAuthState] = useState("loading");
       const [authUser,  setAuthUser ] = useState(null);
-      const [person,    setPerson   ] = useState(null); // matched record from sag_people
+      const [person,    setPerson   ] = useState(null);
       const [data,      setData     ] = useState({
-        people: [], locations: [], cats: [], assignments: [],
+        people: {}, locations: [], cats: [], assignments: [],
       });
 
-      // Load shared app data once
+      // sag_people is now an object keyed by Firebase UID
       const loadData = async () => {
+        const raw = await db.get("sag_people");
+        // Merge seed people with any stored people (seed always wins for protected accounts)
+        const stored = (raw && typeof raw === "object" && !Array.isArray(raw)) ? raw : {};
+        const merged = { ...stored };
+        Object.entries(SEED_PEOPLE).forEach(([uid, person]) => {
+          merged[uid] = { ...person, ...(stored[uid] || {}), protected: true };
+        });
         const d = {
-          people:      (await db.get("sag_people"))      ?? [],
-          locations:   (await db.get("sag_locations"))   ?? [],
-          cats:        (await db.get("sag_cats"))         ?? [],
-          assignments: (await db.get("sag_assignments"))  ?? [],
+          people:      merged,
+          locations:   (await db.get("sag_locations"))  ?? [],
+          cats:        (await db.get("sag_cats"))        ?? [],
+          assignments: (await db.get("sag_assignments")) ?? [],
         };
         setData(d);
         return d;
@@ -136,30 +160,19 @@
           }
           setAuthUser(u);
           const d = await loadData();
-          const email = normEmail(u.email);
-          let match = d.people.find(p => normEmail(p.email) === email);
+          const profile = d.people[u.uid];
 
-          if (!match && email === normEmail(ADMIN_EMAIL)) {
-            // Guarantee the owner always has coordinator access,
-            // and silently register them in People if missing.
-            match = { id: uid(), name: u.displayName || "Coordinator", email: u.email, role: "coordinator", active: true };
-            const updated = [...d.people, match];
-            await db.set("sag_people", updated);
-            setData(p => ({ ...p, people: updated }));
-          }
-
-          if (!match) {
-            // Authenticated with Firebase but not yet added to People.
+          if (!profile) {
             setPerson({ notRegistered: true, email: u.email });
             setAuthState("signedIn");
             return;
           }
-          if (match.active === false) {
+          if (profile.active === false) {
             setPerson({ deactivated: true, email: u.email });
             setAuthState("signedIn");
             return;
           }
-          setPerson(match);
+          setPerson({ ...profile, uid: u.uid });
           setAuthState("signedIn");
         });
         return () => unsub();
@@ -175,10 +188,10 @@
       };
 
       const refreshPerson = async () => {
+        if (!authUser) return;
         const d = await loadData();
-        const email = normEmail(authUser.email);
-        const match = d.people.find(p => normEmail(p.email) === email);
-        if (match) setPerson(match);
+        const profile = d.people[authUser.uid];
+        if (profile) setPerson({ ...profile, uid: authUser.uid });
       };
 
       const logout = () => firebaseAuth.signOut();
@@ -364,7 +377,7 @@
             {tab === "assign"    && <AssignTab    data={data} save={save} />}
             {tab === "cats"      && <CatsTab      data={data} save={save} />}
             {tab === "locations" && <LocationsTab data={data} save={save} />}
-            {tab === "people"    && <PeopleTab    data={data} save={save} currentEmail={authUser.email} />}
+            {tab === "people"    && <PeopleTab    data={data} save={save} currentUid={authUser.uid} />}
             {tab === "history"   && <HistoryTab   data={data} />}
             {tab === "settings"  && <SettingsTab  data={data} save={save} authUser={authUser} />}
           </main>
@@ -437,7 +450,7 @@
         .filter(a => a.date === tday)
         .sort((a, b) => a.shift.localeCompare(b.shift));
 
-      const getPerson = id => data.people.find(p => p.id === id);
+      const getPerson = id => Object.values(data.people || {}).find(p => p.uid === id || p.id === id);
       const getPersonName = id => getPerson(id)?.name ?? "Unknown";
 
       const deleteAssignment = async (id) => {
@@ -573,7 +586,7 @@
       };
 
       const activeCats   = data.cats.filter(c => c.active !== false);
-      const activePeople = data.people.filter(p => p.active !== false);
+      const activePeople = Object.values(data.people || {}).filter(p => p.active !== false);
 
       return (
         <div className="p-4 space-y-4">
@@ -610,7 +623,7 @@
                 <Label>Volunteer</Label>
                 <select value={personId} onChange={e => setPersonId(e.target.value)} className={inputCls}>
                   <option value="">— Select volunteer —</option>
-                  {activePeople.map(p => <option key={p.id} value={p.id}>{p.name}{p.role === "coordinator" ? " (Coordinator)" : ""}</option>)}
+                  {activePeople.map(p => <option key={p.uid} value={p.uid}>{p.name}{p.role === "coordinator" ? " (Coordinator)" : ""}</option>)}
                 </select>
               </div>
             </div>
@@ -930,50 +943,50 @@
     }
 
     // ──────────────────────────────────────────────────────────────
-    // PEOPLE TAB  (roles, archive vs delete)
+    // PEOPLE TAB  (UID-indexed, roles, archive vs delete)
     // ──────────────────────────────────────────────────────────────
-    function PeopleTab({ data, save, currentEmail }) {
+    function PeopleTab({ data, save, currentUid }) {
       const [mode,    setMode   ] = useState("list");
       const [editing, setEditing] = useState(null);
       const [form,    setForm   ] = useState({});
       const [err,     setErr    ] = useState("");
       const [showArchived, setShowArchived] = useState(false);
 
-      const openNew  = () => { setForm({ name: "", email: "", role: "volunteer", active: true }); setEditing("new"); setMode("form"); setErr(""); };
+      // Convert object to array for display
+      const peopleArray = Object.values(data.people || {});
+      const activePeople   = peopleArray.filter(p => p.active !== false);
+      const archivedPeople = peopleArray.filter(p => p.active === false);
+      const shownPeople    = showArchived ? archivedPeople : activePeople;
+
+      const openNew  = () => { setForm({ name: "", uid: "", email: "", role: "volunteer", active: true }); setEditing("new"); setMode("form"); setErr(""); };
       const openEdit = (p) => { setForm({ ...p }); setEditing(p); setMode("form"); setErr(""); };
       const close    = () => { setMode("list"); setEditing(null); setForm({}); setErr(""); };
       const setF     = (k, v) => setForm(p => ({ ...p, [k]: v }));
 
       const handleSave = async () => {
-        if (!form.name?.trim())  { setErr("Name is required."); return; }
-        if (!form.email?.trim()) { setErr("Email is required."); return; }
-        const email = normEmail(form.email);
-        const conflict = data.people.find(p => normEmail(p.email) === email && p.id !== form.id);
-        if (conflict) { setErr(`That email is already used by ${conflict.name}.`); return; }
-        const record = { ...form, email: form.email.trim() };
-        const people = editing === "new"
-          ? [...data.people, { ...record, id: uid() }]
-          : data.people.map(p => p.id === editing.id ? { ...record, id: p.id } : p);
-        await save("people", people);
+        if (!form.name?.trim()) { setErr("Name is required."); return; }
+        if (!form.uid?.trim())  { setErr("Firebase UID is required."); return; }
+        if (!form.email?.trim()){ setErr("Email is required."); return; }
+        if (data.people[form.uid] && editing === "new") {
+          setErr("That UID already exists in People."); return;
+        }
+        const updated = { ...data.people, [form.uid]: { ...form, uid: form.uid } };
+        await save("people", updated);
         close();
       };
 
       const archivePerson = async (p) => {
-        await save("people", data.people.map(x => x.id === p.id ? { ...x, active: !x.active } : x));
+        const updated = { ...data.people, [p.uid]: { ...p, active: !p.active } };
+        await save("people", updated);
       };
 
       const deletePerson = async (p) => {
-        if (normEmail(p.email) === normEmail(ADMIN_EMAIL)) {
-          alert("This is the account owner — it can't be deleted from here.");
-          return;
-        }
-        if (!window.confirm(`Permanently remove ${p.name} from People? This does NOT delete their Firebase login — only their access to this app's data.`)) return;
-        await save("people", data.people.filter(x => x.id !== p.id));
+        if (p.protected) { alert("This account is protected and cannot be removed from here."); return; }
+        if (!window.confirm(`Permanently remove ${p.name}? This removes their access to this app. Their Firebase login still exists.`)) return;
+        const updated = { ...data.people };
+        delete updated[p.uid];
+        await save("people", updated);
       };
-
-      const activePeople   = data.people.filter(p => p.active !== false);
-      const archivedPeople = data.people.filter(p => p.active === false);
-      const shownPeople    = showArchived ? archivedPeople : activePeople;
 
       if (mode === "form") {
         return (
@@ -983,6 +996,14 @@
               <div className="space-y-3">
                 <Field label="Full Name *" value={form.name || ""} onChange={v => setF("name", v)} placeholder="e.g. Maria González" />
                 <Field label="Email *" value={form.email || ""} onChange={v => setF("email", v)} placeholder="maria@email.com" type="email" />
+                {editing === "new" && (
+                  <div>
+                    <Field label="Firebase UID *" value={form.uid || ""} onChange={v => setF("uid", v)} placeholder="Found in Firebase Authentication" />
+                    <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                      Go to Firebase Console → Authentication → Users → copy the UID of this person.
+                    </p>
+                  </div>
+                )}
                 <div>
                   <Label>Role</Label>
                   <select value={form.role || "volunteer"} onChange={e => setF("role", e.target.value)} className={inputCls}>
@@ -990,9 +1011,6 @@
                     <option value="coordinator">Coordinator</option>
                   </select>
                 </div>
-                <p className="text-xs text-slate-400 leading-relaxed">
-                  Adding someone here does NOT create their login. Create their Firebase account first (with a temporary password), then add them here using the same email.
-                </p>
                 {err && <div className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-xl">{err}</div>}
               </div>
             </Card>
@@ -1022,14 +1040,15 @@
           {shownPeople.length === 0
             ? <Empty icon="👤" title={showArchived ? "No archived people" : "No people yet"} subtitle={showArchived ? "" : "Add coordinators and volunteers here."} />
             : shownPeople.map(p => {
-              const isMe   = normEmail(p.email) === normEmail(currentEmail);
-              const isOwner = normEmail(p.email) === normEmail(ADMIN_EMAIL);
+              const isMe = p.uid === currentUid;
               return (
-                <div key={p.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
+                <div key={p.uid} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
                   <div className="flex items-center justify-between">
                     <div className="min-w-0">
                       <div className="font-semibold text-slate-800 flex items-center gap-1.5">
-                        {p.name} {isMe && <span className="text-xs text-teal-600 font-normal">(you)</span>}
+                        {p.name}
+                        {isMe && <span className="text-xs text-teal-600 font-normal">(you)</span>}
+                        {p.protected && <span className="text-xs text-amber-600 font-normal">🔒</span>}
                       </div>
                       <div className="text-sm text-slate-400 mt-0.5 truncate">{p.email}</div>
                       <span className={`inline-block mt-1.5 text-xs px-2.5 py-0.5 rounded-full font-medium capitalize ${p.role === "coordinator" ? "bg-indigo-100 text-indigo-700" : "bg-slate-100 text-slate-600"}`}>
@@ -1038,8 +1057,8 @@
                     </div>
                     <div className="flex flex-col items-end gap-1.5 ml-3 flex-shrink-0">
                       <button onClick={() => openEdit(p)} className="text-xs text-teal-600 font-medium">Edit</button>
-                      {!isOwner && <button onClick={() => archivePerson(p)} className="text-xs text-slate-400">{showArchived ? "Unarchive" : "Archive"}</button>}
-                      {!isOwner && <button onClick={() => deletePerson(p)} className="text-xs text-red-400">Delete</button>}
+                      {!p.protected && <button onClick={() => archivePerson(p)} className="text-xs text-slate-400">{showArchived ? "Unarchive" : "Archive"}</button>}
+                      {!p.protected && <button onClick={() => deletePerson(p)} className="text-xs text-red-400">Delete</button>}
                     </div>
                   </div>
                 </div>
@@ -1058,7 +1077,7 @@
       const asgns = data.assignments
         .filter(a => a.date === date)
         .sort((a, b) => a.shift.localeCompare(b.shift));
-      const getPersonName = id => data.people.find(p => p.id === id)?.name ?? "Unknown";
+      const getPersonName = id => Object.values(data.people || {}).find(p => p.uid === id || p.id === id)?.name ?? "Unknown";
 
       const doPrint = () => printAssignments({
         title: "Zaenid Michis — Task History",
@@ -1204,7 +1223,7 @@
       const [showSettings, setShowSettings] = useState(false);
       const tday = todayISO();
       const myAsgns = data.assignments
-        .filter(a => a.date === tday && a.personId === person.id)
+        .filter(a => a.date === tday && a.personId === person.uid)
         .sort((a, b) => a.shift.localeCompare(b.shift));
 
       const markTask = async (aId, tId) => {
