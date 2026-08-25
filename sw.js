@@ -1,4 +1,4 @@
-const VERSION='zaenid-michis-v5';
+const VERSION='zaenid-michis-v6';
 const STATIC=['./','./index.html','./manifest.json','./icon-192.png','./icon-512.png'];
 const EXTERNAL=[
   'https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js',
@@ -14,6 +14,10 @@ const REPLACEMENTS=[
    "[['all','All 128'],['urgent','⚠️ Urgent'],['pending','○ Pending Care'],['meds','💊 Meds']]"],
   ["<button class=\"urgentbtn ${r.urgent?'on':''}\" data-care=\"urgent\">${r.urgent?'⚠️ URGENT — Tap to clear':'Mark as URGENT ⚠️'}</button><div class=\"checks\">${[['am','☀️','AM'],['pm','🌙','PM'],['ate','🍽️','Food'],['water','💧','Water'],['litter','🪣','Litter'],['med','💊','Med']]",
    "<button class=\"urgentbtn ${r.urgent?'on':''}\" data-care=\"urgent\">${r.urgent?'⚠️ URGENT — Tap to clear':'Mark as URGENT ⚠️'}</button><button class=\"urgentbtn ${r.medRequired?'on':''}\" style=\"margin-top:8px;${r.medRequired?'background:#7c3aed;border-color:#7c3aed':''}\" data-care=\"medRequired\">${r.medRequired?'💊 MEDICATION REQUIRED — Tap to clear':'💊 Mark medication required'}</button><div class=\"checks\">${[['am','☀️','AM'],['pm','🌙','PM'],['ate','🍽️','Food'],['water','💧','Water'],['litter','🪣','Litter'],['med','💊','Med Given']]"],
+  ["<button class=\"btn small\" data-task-del=\"${esc(t._key)}\">Delete</button>",
+   "<button class=\"btn small dangertext\" style=\"min-width:44px;min-height:44px;font-size:24px;line-height:1;padding:0;touch-action:manipulation\" aria-label=\"Delete task\" title=\"Delete task\" data-task-del=\"${esc(t._key)}\">×</button>"],
+  ["async function deleteTask(key){if(confirm('Delete this task?'))await db.remove(`sag_tasks/${key}`)}",
+   "function deleteTask(key){state.tasks=state.tasks.filter(t=>t._key!==key);render();db.remove(`sag_tasks/${key}`)}"],
 ];
 function patchedHtml(text){for(const [from,to] of REPLACEMENTS)if(text.includes(from))text=text.replace(from,to);return text}
 async function cachePatchedIndex(cache){
