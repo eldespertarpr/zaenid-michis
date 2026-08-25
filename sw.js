@@ -1,19 +1,28 @@
-const VERSION='zaenid-michis-v4';
+const VERSION='zaenid-michis-v5';
 const STATIC=['./','./index.html','./manifest.json','./icon-192.png','./icon-512.png'];
 const EXTERNAL=[
   'https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js',
   'https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js',
   'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js'
 ];
-const OLD_WRITE="async function durableWrite(op,path,value){localApply(path,op==='remove'?undefined:value,op==='patch');if(!navigator.onLine){queue(op,path,value);return}try{await Promise.race([netWrite(op,path,value),new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),5000))])}catch{queue(op,path,value)}}";
-const NEW_WRITE="function durableWrite(op,path,value){localApply(path,op==='remove'?undefined:value,op==='patch');if(!navigator.onLine){queue(op,path,value);return Promise.resolve()}Promise.race([netWrite(op,path,value),new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),5000))]).catch(()=>queue(op,path,value));return Promise.resolve()}";
-function patchedHtml(text){return text.includes(OLD_WRITE)?text.replace(OLD_WRITE,NEW_WRITE):text}
+const REPLACEMENTS=[
+  ["async function durableWrite(op,path,value){localApply(path,op==='remove'?undefined:value,op==='patch');if(!navigator.onLine){queue(op,path,value);return}try{await Promise.race([netWrite(op,path,value),new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),5000))])}catch{queue(op,path,value)}}",
+   "function durableWrite(op,path,value){localApply(path,op==='remove'?undefined:value,op==='patch');if(!navigator.onLine){queue(op,path,value);return Promise.resolve()}Promise.race([netWrite(op,path,value),new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),5000))]).catch(()=>queue(op,path,value));return Promise.resolve()}"],
+  ["if(state.filter==='pending'&&r.am&&r.pm)return false;return true",
+   "if(state.filter==='pending'&&r.am&&r.pm&&r.ate&&r.water&&r.litter)return false;if(state.filter==='meds'&&!(r.medRequired||r.med||r.medNotes))return false;return true"],
+  ["[['all','All 128'],['urgent','⚠️ Urgent'],['pending','○ Pending']]",
+   "[['all','All 128'],['urgent','⚠️ Urgent'],['pending','○ Pending Care'],['meds','💊 Meds']]"],
+  ["<button class=\"urgentbtn ${r.urgent?'on':''}\" data-care=\"urgent\">${r.urgent?'⚠️ URGENT — Tap to clear':'Mark as URGENT ⚠️'}</button><div class=\"checks\">${[['am','☀️','AM'],['pm','🌙','PM'],['ate','🍽️','Food'],['water','💧','Water'],['litter','🪣','Litter'],['med','💊','Med']]",
+   "<button class=\"urgentbtn ${r.urgent?'on':''}\" data-care=\"urgent\">${r.urgent?'⚠️ URGENT — Tap to clear':'Mark as URGENT ⚠️'}</button><button class=\"urgentbtn ${r.medRequired?'on':''}\" style=\"margin-top:8px;${r.medRequired?'background:#7c3aed;border-color:#7c3aed':''}\" data-care=\"medRequired\">${r.medRequired?'💊 MEDICATION REQUIRED — Tap to clear':'💊 Mark medication required'}</button><div class=\"checks\">${[['am','☀️','AM'],['pm','🌙','PM'],['ate','🍽️','Food'],['water','💧','Water'],['litter','🪣','Litter'],['med','💊','Med Given']]"],
+];
+function patchedHtml(text){for(const [from,to] of REPLACEMENTS)if(text.includes(from))text=text.replace(from,to);return text}
 async function cachePatchedIndex(cache){
   try{
     const r=await fetch('./index.html',{cache:'reload'});
     const text=patchedHtml(await r.text());
-    await cache.put('./index.html',new Response(text,{status:200,headers:{'Content-Type':'text/html; charset=utf-8'}}));
-    await cache.put('./',new Response(text,{status:200,headers:{'Content-Type':'text/html; charset=utf-8'}}));
+    const response=new Response(text,{status:200,headers:{'Content-Type':'text/html; charset=utf-8'}});
+    await cache.put('./index.html',response.clone());
+    await cache.put('./',response);
   }catch{}
 }
 self.addEventListener('install',event=>{
@@ -21,9 +30,7 @@ self.addEventListener('install',event=>{
     const cache=await caches.open(VERSION);
     await Promise.allSettled(STATIC.filter(x=>x!=='./'&&x!=='./index.html').map(x=>cache.add(x)));
     await cachePatchedIndex(cache);
-    await Promise.allSettled(EXTERNAL.map(async url=>{
-      try{const response=await fetch(url,{mode:'no-cors',cache:'reload'});await cache.put(url,response)}catch{}
-    }));
+    await Promise.allSettled(EXTERNAL.map(async url=>{try{const response=await fetch(url,{mode:'no-cors',cache:'reload'});await cache.put(url,response)}catch{}}));
     await self.skipWaiting();
   })());
 });
