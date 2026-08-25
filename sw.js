@@ -1,4 +1,4 @@
-const VERSION='zaenid-michis-v10';
+const VERSION='zaenid-michis-v11';
 const STATIC=['./','./index.html','./manifest.json','./icon-192.png','./icon-512.png'];
 const EXTERNAL=[
   'https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js',
@@ -30,6 +30,20 @@ const REPLACEMENTS=[
    ".task-actions{display:flex;gap:7px;margin-top:10px}.task-x{margin-left:auto;width:56px;height:56px;min-width:56px;border:0;border-radius:16px;background:#fee2e2;color:#b91c1c;font-size:34px;line-height:1;font-weight:700;display:grid;place-items:center;touch-action:manipulation;-webkit-user-select:none;user-select:none}.task-x:active{transform:scale(.94);background:#fecaca}"],
   [".login .card{padding:22px;box-shadow:0 24px 70px #0006}",
    ".login .card{padding:22px;box-shadow:0 24px 70px #0006}.login input{min-height:48px}"],
+  ["function render(){if(state.authState==='loading')",
+   "function render(){document.querySelectorAll('.modalbg').forEach(el=>el.remove());if(state.authState==='loading')"],
+  ["function openCatModal(){const cat=",
+   "function openCatModal(){document.querySelectorAll('.modalbg').forEach(el=>el.remove());const cat="],
+  ["function openPhotoModal(){const cat=",
+   "function openPhotoModal(){document.querySelectorAll('.modalbg').forEach(el=>el.remove());const cat="],
+  ["function openPersonModal(){const isNew=",
+   "function openPersonModal(){document.querySelectorAll('.modalbg').forEach(el=>el.remove());const isNew="],
+  ["document.getElementById('catModal')?.remove()",
+   "document.querySelectorAll('.modalbg').forEach(el=>el.remove())"],
+  ["document.getElementById('photoModal')?.remove()",
+   "document.querySelectorAll('.modalbg').forEach(el=>el.remove())"],
+  ["document.getElementById('personModal')?.remove()",
+   "document.querySelectorAll('.modalbg').forEach(el=>el.remove())"]
 ];
 function patchedHtml(text){for(const [from,to] of REPLACEMENTS)if(text.includes(from))text=text.replace(from,to);return text}
 async function cachePatchedIndex(cache){try{const r=await fetch('./index.html',{cache:'reload'});const text=patchedHtml(await r.text());const response=new Response(text,{status:200,headers:{'Content-Type':'text/html; charset=utf-8'}});await cache.put('./index.html',response.clone());await cache.put('./',response)}catch{}}
