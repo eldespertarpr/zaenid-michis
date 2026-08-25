@@ -1,388 +1,117 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="Zaenid Michis" />
-  <meta name="mobile-web-app-capable" content="yes" />
-  <meta name="theme-color" content="#0f172a" />
-  <link rel="manifest" href="manifest.json">
-  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
-  <link rel="apple-touch-icon" sizes="192x192" href="icon-192.png">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Zaenid Michis">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="format-detection" content="telephone=no">
+  <link rel="manifest" href="./manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
+  <link rel="apple-touch-icon" sizes="192x192" href="./icon-192.png">
   <title>Zaenid Michis</title>
-  <script>if("serviceWorker"in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js"));</script>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script crossorigin src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/@babel/standalone@7.24.7/babel.min.js"></script>
+  <style>
+    :root{--ink:#0f172a;--muted:#64748b;--line:#e2e8f0;--bg:#f8fafc;--card:#fff;--teal:#0d9488;--red:#ef4444;--green:#10b981;--amber:#f59e0b}
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{margin:0;min-height:100%;background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:#1e293b}body{overscroll-behavior:none}button,input,select,textarea{font:inherit}input,select,textarea{font-size:16px!important}button{cursor:pointer}.hidden{display:none!important}
+    .screen{min-height:100dvh}.center{display:flex;align-items:center;justify-content:center}.login{background:var(--ink);padding:24px}.login-box{width:min(100%,380px)}.brand{text-align:center;color:#fff;margin-bottom:28px}.paw{font-size:64px}.brand h1{margin:8px 0 4px;font-size:30px}.brand p{margin:0;color:#94a3b8;font-size:14px}.card{background:#fff;border:1px solid #eef2f7;border-radius:18px;padding:16px;box-shadow:0 2px 8px #0f172a0a}.login .card{padding:22px;box-shadow:0 24px 70px #0006}.field{margin-bottom:12px}.field label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#64748b;margin-bottom:6px}.input{width:100%;border:1px solid var(--line);border-radius:12px;padding:11px 12px;background:#fff;outline:none}.input:focus{border-color:#2dd4bf;box-shadow:0 0 0 3px #2dd4bf22}.btn{border:0;border-radius:12px;padding:11px 14px;font-weight:700;background:#e2e8f0;color:#334155}.btn.primary{background:var(--ink);color:#fff}.btn.teal{background:var(--teal);color:#fff}.btn.red{background:var(--red);color:#fff}.btn.ghost{background:transparent;color:var(--teal)}.btn.small{padding:7px 10px;font-size:12px}.btn:disabled{opacity:.55}.w100{width:100%}.msg{padding:10px 12px;border-radius:12px;font-size:13px;margin:8px 0}.msg.err{background:#fef2f2;color:#b91c1c}.msg.ok{background:#ecfdf5;color:#047857}.msg.warn{background:#fffbeb;color:#92400e}
+    .top{position:sticky;top:0;z-index:30;background:var(--ink);color:white;padding:calc(10px + env(safe-area-inset-top)) 14px 10px;display:flex;align-items:center;justify-content:space-between;min-height:58px}.top .sub{font-size:11px;color:#94a3b8}.top .name{font-weight:800;font-size:14px}.top-actions{display:flex;gap:7px}.top button{background:transparent;border:1px solid #475569;color:#cbd5e1;border-radius:9px;padding:7px 9px;font-size:12px}
+    .onlinebar{position:sticky;top:58px;z-index:29;text-align:center;font-size:11px;padding:5px 8px;background:#ecfdf5;color:#047857;border-bottom:1px solid #d1fae5}.onlinebar.off{background:#fff7ed;color:#9a3412;border-color:#fed7aa}.main{padding-bottom:calc(78px + env(safe-area-inset-bottom));min-height:calc(100dvh - 58px)}.page{padding:14px;max-width:850px;margin:0 auto}.title-row{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}.title-row h2{font-size:17px;margin:0}.toolbar{position:sticky;top:83px;z-index:20;background:#fff;border-bottom:1px solid #f1f5f9;padding:10px 14px}.row{display:flex;gap:8px;align-items:center}.grow{flex:1}.filters{display:flex;gap:6px;margin-top:8px}.filter{flex:1;border:0;border-radius:9px;padding:7px;background:#f1f5f9;color:#64748b;font-size:12px;font-weight:700}.filter.on{background:var(--ink);color:white}
+    .list{background:#fff}.catrow{display:flex;align-items:center;gap:11px;padding:11px 14px;border-bottom:1px solid #f1f5f9}.catrow.urgent{background:#fff1f2;border-left:4px solid var(--red)}.avatar{width:42px;height:42px;border-radius:50%;object-fit:cover;background:#e2e8f0;display:grid;place-items:center;font-size:12px;font-weight:800;color:#64748b;flex:none}.catmain{flex:1;min-width:0}.catname{font-size:14px;font-weight:750}.badges{display:flex;gap:4px;flex-wrap:wrap;margin-top:5px}.badge{font-size:9px;padding:3px 6px;border-radius:999px;background:#f1f5f9;color:#94a3b8;font-weight:800}.badge.done{background:#d1fae5;color:#047857}.badge.urgent{background:#ef4444;color:white}.chev{color:#cbd5e1;font-size:22px}.notesbox{padding:14px;background:#fff}.urgentbox{margin-top:8px;background:#fef2f2;border:1px solid #fecaca;border-radius:12px;padding:9px 10px;font-size:12px;font-weight:800;color:#b91c1c}
+    .nav{position:fixed;left:0;right:0;bottom:0;z-index:35;background:#fff;border-top:1px solid var(--line);display:flex;padding-bottom:env(safe-area-inset-bottom)}.nav button{flex:1;min-width:0;border:0;background:white;color:#94a3b8;padding:7px 2px 8px}.nav button.on{color:var(--teal)}.nav .ico{display:block;font-size:18px;line-height:1}.nav .lab{display:block;font-size:9px;font-weight:700;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .modalbg{position:fixed;inset:0;background:#0009;z-index:60;display:flex;align-items:flex-end}.modal{width:100%;max-height:92dvh;overflow:auto;background:#fff;border-radius:24px 24px 0 0;padding:18px 18px calc(22px + env(safe-area-inset-bottom));}.modalhead{display:flex;align-items:center;gap:12px;margin-bottom:14px}.modalhead h3{margin:0;font-size:19px}.close{margin-left:auto;width:34px;height:34px;border:0;border-radius:50%;background:#f1f5f9;font-size:20px}.checks{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:12px 0}.check{border:2px solid var(--line);background:white;border-radius:13px;padding:11px 5px;text-align:center;font-size:12px;font-weight:800}.check.on{border-color:#34d399;background:#ecfdf5;color:#047857}.check .emoji{font-size:20px;display:block;margin-bottom:3px}.urgentbtn{width:100%;border:1px solid #fecaca;background:#fef2f2;color:#dc2626;border-radius:12px;padding:10px;font-weight:800}.urgentbtn.on{background:#ef4444;color:white;border-color:#ef4444}
+    .task{margin-bottom:9px}.task.done{background:#ecfdf5;border-color:#a7f3d0;opacity:.8}.task h4{margin:0;font-size:14px}.task p{font-size:12px;color:#64748b;margin:4px 0 0}.task-actions{display:flex;gap:7px;margin-top:10px}.split{display:grid;grid-template-columns:1fr 1fr;gap:8px}.person{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:8px}.person .email{font-size:12px;color:#94a3b8;overflow:hidden;text-overflow:ellipsis}.pill{display:inline-block;margin-top:4px;padding:3px 8px;border-radius:999px;background:#f1f5f9;color:#475569;font-size:11px}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.stat{text-align:center}.stat b{display:block;font-size:23px}.empty{text-align:center;padding:45px 15px;color:#64748b}.empty .emoji{font-size:44px}.install{position:fixed;left:10px;right:10px;bottom:calc(78px + env(safe-area-inset-bottom));z-index:45;background:#0f172a;color:white;border-radius:14px;padding:11px 12px;box-shadow:0 10px 30px #0004;display:flex;align-items:center;gap:10px;font-size:12px}.install button{margin-left:auto;border:0;background:#14b8a6;color:white;border-radius:9px;padding:8px 10px;font-weight:800}.install .x{background:transparent;color:#94a3b8;margin-left:0}.photo-grid{display:grid;gap:8px}.photo-item{display:flex;align-items:center;gap:10px}.photo-item .grow{min-width:0}.muted{color:#94a3b8;font-size:12px}.dangertext{color:#dc2626}.tealtext{color:#0d9488}.smalltext{font-size:12px}.mb8{margin-bottom:8px}.mb12{margin-bottom:12px}.mt8{margin-top:8px}.mt12{margin-top:12px}
+    @media(min-width:700px){.modal{max-width:600px;margin:0 auto;border-radius:24px 24px 0 0}.page{padding:20px}.toolbar{padding-left:max(14px,calc((100vw - 850px)/2));padding-right:max(14px,calc((100vw - 850px)/2))}}
+    @media print{.no-print{display:none!important}.main{padding:0}.page{max-width:none;padding:0}body{background:#fff}.print-only{display:block!important}}
+  </style>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-  <style>
-    *,*::before,*::after{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-    body{margin:0;overscroll-behavior:none;background:#f8fafc;}
-    input,select,textarea{font-size:16px!important;}
-    @media print{.no-print{display:none!important;}#printArea{display:block!important;font-family:sans-serif;padding:20px;}}
-    #printArea{display:none;}
-  </style>
 </head>
 <body>
-<div id="root"></div>
-<div id="printArea"></div>
-<script type="text/babel">
-  const {useState,useEffect,useRef}=React;
-  if(!firebase.apps.length){firebase.initializeApp({apiKey:"AIzaSyCiAQmrzirdICxSxxKjf9xaL7lBhU9hdnk",authDomain:"zaenid-michis.firebaseapp.com",databaseURL:"https://zaenid-michis-default-rtdb.firebaseio.com",projectId:"zaenid-michis",storageBucket:"zaenid-michis.firebasestorage.app",messagingSenderId:"754852396413",appId:"1:754852396413:web:f64fa553126cc01e102014"});}
-  const FDB=firebase.database(),FAUTH=firebase.auth();
-  const SEED={"A1kGcYM92TS8uiQQojDhRunsYSF3":{uid:"A1kGcYM92TS8uiQQojDhRunsYSF3",name:"Richard",email:"explorerfta@gmail.com",role:"coordinator",active:true,protected:true},"ZN34jUTRbgPOTQBdsipQEEKKFAh1":{uid:"ZN34jUTRbgPOTQBdsipQEEKKFAh1",name:"Trizzy",email:"trizzycat@hotmail.com",role:"coordinator",active:true,protected:true}};
-  const CATS=[{id:"c001",n:1,name:"Amapola"},{id:"c002",n:2,name:"Amber"},{id:"c003",n:3,name:"Anuel"},{id:"c004",n:4,name:"Atenea"},{id:"c005",n:5,name:"Augusto"},{id:"c006",n:6,name:"Beethoven"},{id:"c007",n:7,name:"Betty"},{id:"c008",n:8,name:"Binx"},{id:"c009",n:9,name:"Black Bean"},{id:"c010",n:10,name:"Bol\xf3n"},{id:"c011",n:11,name:"Boo"},{id:"c012",n:12,name:"Boots"},{id:"c013",n:13,name:"Bootstrap (Oriental)"},{id:"c014",n:14,name:"Brad Pitt"},{id:"c015",n:15,name:"Bruno"},{id:"c016",n:16,name:"Buble"},{id:"c017",n:17,name:"Chad"},{id:"c018",n:18,name:"Chleo"},{id:"c019",n:19,name:"Chunky"},{id:"c020",n:20,name:"Cinnamon"},{id:"c021",n:21,name:"Clyde"},{id:"c022",n:22,name:"Coco"},{id:"c023",n:23,name:"Constantine"},{id:"c024",n:24,name:"Coon"},{id:"c025",n:25,name:"Cranberry"},{id:"c026",n:26,name:"Curcuma"},{id:"c027",n:27,name:"D.F."},{id:"c028",n:28,name:"Donatella la Gorda"},{id:"c029",n:29,name:"Donny"},{id:"c030",n:30,name:"Dora"},{id:"c031",n:31,name:"Dumbo"},{id:"c032",n:32,name:"Dweller"},{id:"c033",n:33,name:"Esmeralda"},{id:"c034",n:34,name:"Fantasma"},{id:"c035",n:35,name:"Fiel"},{id:"c036",n:36,name:"Fig Newton"},{id:"c037",n:37,name:"Firenze"},{id:"c038",n:38,name:"Flash (Mariposa)"},{id:"c039",n:39,name:"Gemini"},{id:"c040",n:40,name:"Gizmo"},{id:"c041",n:41,name:"Goldie"},{id:"c042",n:42,name:"Grecia"},{id:"c043",n:43,name:"Gringo"},{id:"c044",n:44,name:"Grumpilina"},{id:"c045",n:45,name:"Hades"},{id:"c046",n:46,name:"Igorina"},{id:"c047",n:47,name:"Iris (Onion)"},{id:"c048",n:48,name:"Jack"},{id:"c049",n:49,name:"Jefe"},{id:"c050",n:50,name:"Jerry"},{id:"c051",n:51,name:"Jirou"},{id:"c052",n:52,name:"Judy"},{id:"c053",n:53,name:"June"},{id:"c054",n:54,name:"Kevin"},{id:"c055",n:55,name:"Kiko"},{id:"c056",n:56,name:"Leonardo"},{id:"c057",n:57,name:"Lilliepad"},{id:"c058",n:58,name:"Lily"},{id:"c059",n:59,name:"Lion"},{id:"c060",n:60,name:"Llorin"},{id:"c061",n:61,name:"Lola"},{id:"c062",n:62,name:"Lucifer (Soma)"},{id:"c063",n:63,name:"Maluma"},{id:"c064",n:64,name:"Mamey"},{id:"c065",n:65,name:"Matt"},{id:"c066",n:66,name:"Meatball"},{id:"c067",n:67,name:"Miso"},{id:"c068",n:68,name:"Mr. Green"},{id:"c069",n:69,name:"Mr. Wrinkles"},{id:"c070",n:70,name:"Muta"},{id:"c071",n:71,name:"Mystic"},{id:"c072",n:72,name:"Nana"},{id:"c073",n:73,name:"Naranja"},{id:"c074",n:74,name:"Nikolai"},{id:"c075",n:75,name:"Obrero"},{id:"c076",n:76,name:"Oliver"},{id:"c077",n:77,name:"Ominous"},{id:"c078",n:78,name:"Owl"},{id:"c079",n:79,name:"Panda"},{id:"c080",n:80,name:"Pebbles"},{id:"c081",n:81,name:"Persephone"},{id:"c082",n:82,name:"Petal"},{id:"c083",n:83,name:"Pig"},{id:"c084",n:84,name:"Pi\xf1a"},{id:"c085",n:85,name:"Pseudo"},{id:"c086",n:86,name:"Red"},{id:"c087",n:87,name:"Reese"},{id:"c088",n:88,name:"Ricardo (Enrique)"},{id:"c089",n:89,name:"Rose"},{id:"c090",n:90,name:"Safa"},{id:"c091",n:91,name:"Salem"},{id:"c092",n:92,name:"Sally"},{id:"c093",n:93,name:"Sand"},{id:"c094",n:94,name:"Sapphi"},{id:"c095",n:95,name:"Scotty"},{id:"c096",n:96,name:"Seer"},{id:"c097",n:97,name:"Shadow"},{id:"c098",n:98,name:"Sibling (Kalo)"},{id:"c099",n:99,name:"Silvester (Josie)"},{id:"c100",n:100,name:"Simba"},{id:"c101",n:101,name:"Snowflake"},{id:"c102",n:102,name:"Sombra"},{id:"c103",n:103,name:"Speedy Gonzalez"},{id:"c104",n:104,name:"Spider Kitty"},{id:"c105",n:105,name:"Steve"},{id:"c106",n:106,name:"Stone"},{id:"c107",n:107,name:"Storm"},{id:"c108",n:108,name:"Stripes"},{id:"c109",n:109,name:"Tabby"},{id:"c110",n:110,name:"Taco"},{id:"c111",n:111,name:"Tara"},{id:"c112",n:112,name:"Taro"},{id:"c113",n:113,name:"Teddy"},{id:"c114",n:114,name:"Tiggy"},{id:"c115",n:115,name:"Tigher"},{id:"c116",n:116,name:"Tigress"},{id:"c117",n:117,name:"Tipo"},{id:"c118",n:118,name:"Tita"},{id:"c119",n:119,name:"Triston"},{id:"c120",n:120,name:"Tuna"},{id:"c121",n:121,name:"Tuqui"},{id:"c122",n:122,name:"Twisty"},{id:"c123",n:123,name:"Twity"},{id:"c124",n:124,name:"Utah"},{id:"c125",n:125,name:"Villager"},{id:"c126",n:126,name:"Willow"},{id:"c127",n:127,name:"Yang"},{id:"c128",n:128,name:"Ying"}];
-  const STASKS=["Vet appointment","Move cat","Trap feral cat","Transfer to foster","Clean transport kennel","Clean trap cage","Laundry – towels & beds"];
-  const tod=()=>new Date().toISOString().slice(0,10);
-  const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
-  const fmtD=d=>new Date(d+"T12:00:00").toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"});
-  const fmtT=i=>new Date(i).toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit"});
-  const IC="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 bg-white";
-  const db={
-    async get(k){try{const s=await FDB.ref(k).get();return s.exists()?s.val():null;}catch{return null;}},
-    async set(k,v){try{await FDB.ref(k).set(v);}catch(e){console.error(e);}},
-    async patch(k,v){try{await FDB.ref(k).update(v);}catch(e){console.error(e);}},
-    listen(k,cb){const r=FDB.ref(k);r.on("value",s=>cb(s.exists()?s.val():null));return()=>r.off("value");},
-  };
-
-  function App(){
-    const [as,sAs]=useState("loading"),[au,sAu]=useState(null),[per,sPer]=useState(null),[dat,sDat]=useState({people:{},catPhotos:{},tasks:[]});
-    const loadData=async()=>{
-      const raw=await db.get("sag_people");
-      const stored=(raw&&typeof raw==="object"&&!Array.isArray(raw))?raw:{};
-      const merged={...stored};
-      Object.entries(SEED).forEach(([u,p])=>{merged[u]={...p,...(stored[u]||{}),protected:true};});
-      const d={people:merged,catPhotos:(await db.get("sag_cat_photos"))??{},tasks:(await db.get("sag_tasks"))??[]};
-      sDat(d);return d;
-    };
-    useEffect(()=>{
-      const unsub=FAUTH.onAuthStateChanged(async u=>{
-        if(!u){sAu(null);sPer(null);sAs("out");return;}
-        sAu(u);const d=await loadData();const p=d.people[u.uid];
-        if(!p){sPer({notReg:true,email:u.email});sAs("in");return;}
-        if(p.active===false){sPer({deact:true,email:u.email});sAs("in");return;}
-        sPer({...p,uid:u.uid});sAs("in");
-      });
-      return()=>unsub();
-    },[]);
-    const save=async(k,v)=>{const km={people:"sag_people",catPhotos:"sag_cat_photos",tasks:"sag_tasks"};sDat(p=>({...p,[k]:v}));await db.set(km[k],v);};
-    const logout=()=>FAUTH.signOut();
-    if(as==="loading")return <Splash/>;
-    if(as==="out")return <Login/>;
-    if(per?.notReg)return <Gate icon="🙈" title="Account not set up" msg={`${per.email} hasn't been added to People yet. Ask your coordinator.`} out={logout}/>;
-    if(per?.deact) return <Gate icon="⏸️" title="Account inactive" msg={`${per.email} has been deactivated.`} out={logout}/>;
-    if(per?.role==="coordinator")return <CoordApp au={au} per={per} dat={dat} save={save} logout={logout} reload={loadData}/>;
-    return <VolApp au={au} per={per} dat={dat} save={save} logout={logout}/>;
-  }
-
-  function Splash(){return <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center"><div className="text-6xl mb-3">🐾</div><div className="text-white font-bold text-xl">Zaenid Michis</div><div className="text-slate-400 text-sm mt-1">Loading…</div></div>;}
-  function Gate({icon,title,msg,out}){return <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-6 text-center"><div className="text-6xl mb-4">{icon}</div><h1 className="text-white text-xl font-bold mb-2">{title}</h1><p className="text-slate-400 text-sm max-w-xs mb-6">{msg}</p><button onClick={out} className="text-slate-300 text-sm border border-slate-600 px-4 py-2 rounded-lg">Sign out</button></div>;}
-
-  function Login(){
-    const [em,sEm]=useState(""),[pw,sPw]=useState(""),[err,sErr]=useState(""),[busy,sBusy]=useState(false),[rm,sRm]=useState("");
-    const go=async()=>{sErr("");sRm("");if(!em.trim()||!pw){sErr("Enter email and password.");return;}sBusy(true);try{await FAUTH.signInWithEmailAndPassword(em.trim(),pw);}catch(e){const m={"auth/invalid-credential":"Incorrect email or password.","auth/wrong-password":"Incorrect password.","auth/user-not-found":"No account found.","auth/too-many-requests":"Too many attempts."};sErr(m[e.code]||"Couldn't sign in.");}sBusy(false);};
-    const forgot=async()=>{sErr("");sRm("");if(!em.trim()){sErr("Enter your email first.");return;}sBusy(true);try{await FAUTH.sendPasswordResetEmail(em.trim());sRm("✅ Reset email sent!");}catch{sErr("Couldn't send email.");}sBusy(false);};
-    return <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-6"><div className="w-full max-w-sm"><div className="text-center mb-8"><div className="text-7xl mb-4">🐾</div><h1 className="text-3xl font-bold text-white">Zaenid Michis</h1><p className="text-slate-400 mt-2 text-sm">Cat Care Center</p></div><div className="bg-white rounded-2xl p-6 shadow-2xl space-y-3"><div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Email</label><input type="email" autoCapitalize="none" value={em} onChange={e=>{sEm(e.target.value);sErr("");}} onKeyDown={e=>e.key==="Enter"&&go()} placeholder="you@email.com" className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:border-teal-500" autoFocus/></div><div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Password</label><input type="password" value={pw} onChange={e=>{sPw(e.target.value);sErr("");}} onKeyDown={e=>e.key==="Enter"&&go()} placeholder="••••••••" className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:border-teal-500"/></div>{err&&<p className="text-red-500 text-sm">{err}</p>}{rm&&<p className="text-emerald-600 text-sm">{rm}</p>}<button onClick={go} disabled={busy} className="w-full bg-slate-900 text-white font-semibold py-3.5 rounded-xl text-sm disabled:opacity-50">{busy?"Please wait…":"Sign In"}</button><button onClick={forgot} disabled={busy} className="w-full text-teal-600 text-sm font-medium py-1">Forgot password?</button></div></div></div>;
-  }
-
-  function CoordApp({au,per,dat,save,logout,reload}){
-    const [tab,sTab]=useState("care");
-    const T=[{id:"care",icon:"🐾",label:"Daily Care"},{id:"tasks",icon:"📋",label:"Tasks"},{id:"cats",icon:"🐱",label:"Cats"},{id:"people",icon:"👤",label:"People"},{id:"history",icon:"📅",label:"History"},{id:"settings",icon:"⚙️",label:"Settings"}];
-    return <div className="min-h-screen bg-slate-50 flex flex-col">
-      <header className="no-print bg-slate-900 text-white px-4 py-3 flex items-center justify-between sticky top-0 z-10"><div className="flex items-center gap-2"><span className="text-xl">🐾</span><div><div className="font-bold text-sm">Zaenid Michis</div><div className="text-slate-400 text-xs">Coordinator · {per.name}</div></div></div><button onClick={logout} className="text-slate-400 text-xs border border-slate-600 px-3 py-1.5 rounded-lg">Sign out</button></header>
-      <main className="flex-1 overflow-auto pb-20">
-        {tab==="care"&&<CareTab per={per} dat={dat} isCoord/>}
-        {tab==="tasks"&&<TasksTab dat={dat} save={save} per={per}/>}
-        {tab==="cats"&&<CatsTab dat={dat} save={save}/>}
-        {tab==="people"&&<PeopleTab dat={dat} save={save} myUid={au.uid}/>}
-        {tab==="history"&&<HistTab dat={dat}/>}
-        {tab==="settings"&&<SetTab dat={dat} save={save} au={au}/>}
-      </main>
-      <nav className="no-print fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex z-10">{T.map(t=><button key={t.id} onClick={()=>sTab(t.id)} className={`flex-1 py-2 flex flex-col items-center gap-0.5 min-w-0 ${tab===t.id?"text-teal-600":"text-slate-400"}`}><span className="text-base leading-none">{t.icon}</span><span className="text-[10px] font-medium leading-none">{t.label}</span></button>)}</nav>
-    </div>;
-  }
-
-  function CareTab({per,dat,isCoord}){
-    const [date,sDate]=useState(tod());
-    const [recs,sRecs]=useState({});
-    const [srch,sSrch]=useState("");
-    const [filt,sFilt]=useState("all");
-    const [sel,sSel]=useState(null);
-    const [gnotes,sGnotes]=useState("");
-    const uref=useRef(null);
-    useEffect(()=>{
-      if(uref.current)uref.current();
-      const unsub=db.listen(`sag_daily/${date}`,v=>{sRecs(v||{});});
-      uref.current=unsub;
-      db.get(`sag_daily_notes/${date}`).then(n=>sGnotes(n?.notes||""));
-      return()=>{if(uref.current)uref.current();};
-    },[date]);
-    const mark=async(cid,field,val)=>{
-      const now=new Date().toISOString();
-      sRecs(r=>({...r,[cid]:{...(r[cid]||{}),updatedBy:per.name,updatedAt:now,[field]:val}}));
-      await db.patch(`sag_daily/${date}/${cid}`,{[field]:val,updatedBy:per.name,updatedAt:now});
-    };
-    const saveGnotes=async v=>{sGnotes(v);await db.set(`sag_daily_notes/${date}`,{notes:v,by:per.name,at:new Date().toISOString()});};
-    const urgents=CATS.filter(c=>recs[c.id]?.urgent);
-    const vis=CATS.filter(c=>{
-      if(srch&&!c.name.toLowerCase().includes(srch.toLowerCase())&&!String(c.n).includes(srch))return false;
-      if(filt==="urgent"&&!recs[c.id]?.urgent)return false;
-      if(filt==="pending"){const r=recs[c.id];if(r?.am&&r?.pm)return false;}
-      return true;
-    });
-    const doPrint=()=>{
-      const rows=CATS.map(c=>{const r=recs[c.id]||{};return`<tr style="border-bottom:1px solid #eee"><td style="padding:4px 6px;text-align:center">${c.n}</td><td style="padding:4px 6px">${c.name}${r.urgent?` <b style="color:red">⚠️</b>`:""}</td><td style="padding:4px 6px;text-align:center">${r.am?"✓":""}</td><td style="padding:4px 6px;text-align:center">${r.pm?"✓":""}</td><td style="padding:4px 6px;text-align:center">${r.ate?"✓":""}</td><td style="padding:4px 6px;text-align:center">${r.water?"✓":""}</td><td style="padding:4px 6px;text-align:center">${r.litter?"✓":""}</td><td style="padding:4px 6px;text-align:center">${r.med?"✓":""}</td><td style="padding:4px 6px;font-size:11px">${r.careNotes||""}</td><td style="padding:4px 6px;font-size:11px">${r.medNotes||""}</td></tr>`;}).join("");
-      document.getElementById("printArea").innerHTML=`<h2 style="margin:0 0 4px">Zaenid Michis — Daily Care Report</h2><p style="margin:0 0 12px;color:#666">${fmtD(date)}</p>${urgents.length?`<p style="color:red;margin-bottom:8px;font-weight:bold">⚠️ URGENT: ${urgents.map(c=>c.name).join(", ")}</p>`:""}<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#0f172a;color:white"><th style="padding:6px">#</th><th style="padding:6px;text-align:left">Name</th><th style="padding:6px">AM</th><th style="padding:6px">PM</th><th style="padding:6px">Ate</th><th style="padding:6px">Water</th><th style="padding:6px">Litter</th><th style="padding:6px">Med</th><th style="padding:6px;text-align:left">Care Notes</th><th style="padding:6px;text-align:left">Medical Notes</th></tr></thead><tbody>${rows}</tbody></table>${gnotes?`<p style="margin-top:16px"><strong>General notes:</strong> ${gnotes}</p>`:""}`;
-      window.print();
-    };
-    const doUrgPrint=()=>{
-      if(!urgents.length){alert("No urgent cats.");return;}
-      const rows=urgents.map(c=>{const r=recs[c.id]||{};return`<tr style="background:#fff3f3;border-bottom:1px solid #fca5a5"><td style="padding:6px 8px">${c.n}. ${c.name}</td><td style="padding:6px 8px">${r.careNotes||"—"}</td><td style="padding:6px 8px">${r.medNotes||"—"}</td><td style="padding:6px 8px;font-size:11px">${r.updatedBy||""}${r.updatedAt?" at "+fmtT(r.updatedAt):""}</td></tr>`;}).join("");
-      document.getElementById("printArea").innerHTML=`<h2 style="color:red;margin:0 0 4px">⚠️ URGENT CATS — ${fmtD(date)}</h2><table style="width:100%;border-collapse:collapse;font-size:13px;margin-top:12px"><thead><tr style="background:#ef4444;color:white"><th style="padding:6px;text-align:left">Cat</th><th style="padding:6px;text-align:left">Care notes</th><th style="padding:6px;text-align:left">Medical notes</th><th style="padding:6px;text-align:left">Marked by</th></tr></thead><tbody>${rows}</tbody></table>`;
-      window.print();
-    };
-    return <div className="flex flex-col" style={{height:"calc(100vh - 112px)"}}>
-      <div className="no-print sticky top-0 bg-white border-b border-slate-100 z-10 px-4 py-3 space-y-2">
-        <div className="flex items-center gap-2">
-          <input type="date" value={date} onChange={e=>sDate(e.target.value)} className="flex-1 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none"/>
-          <button onClick={doPrint} className="text-xs bg-slate-100 text-slate-700 px-3 py-2 rounded-lg font-semibold flex-shrink-0">🖨️ Print</button>
-          {urgents.length>0&&<button onClick={doUrgPrint} className="text-xs bg-red-100 text-red-700 px-3 py-2 rounded-lg font-semibold flex-shrink-0">⚠️ Urgent</button>}
-        </div>
-        <input value={srch} onChange={e=>sSrch(e.target.value)} placeholder="🔍 Search cat by name or number…" className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none"/>
-        <div className="flex gap-1.5">
-          {[["all","All 128"],["urgent","⚠️ Urgent"],["pending","○ Pending"]].map(([f,l])=><button key={f} onClick={()=>sFilt(f)} className={`flex-1 py-1.5 rounded-lg text-xs font-semibold ${filt===f?"bg-slate-900 text-white":"bg-slate-100 text-slate-600"}`}>{l}</button>)}
-        </div>
-        {urgents.length>0&&<div className="bg-red-50 border border-red-200 rounded-xl px-3 py-2"><p className="text-red-700 text-xs font-bold">⚠️ URGENT: {urgents.map(c=>c.name).join(", ")}</p></div>}
-      </div>
-      <div className="flex-1 overflow-auto">
-        <div className="divide-y divide-slate-100">
-          {vis.map(cat=>{
-            const r=recs[cat.id]||{};const ph=dat.catPhotos?.[cat.id];
-            return <div key={cat.id} onClick={()=>sSel(cat)} className={`flex items-center gap-3 px-4 py-3 cursor-pointer ${r.urgent?"bg-red-50 border-l-4 border-red-500":"active:bg-slate-50"}`}>
-              {ph?<img src={ph} alt={cat.name} className="w-10 h-10 rounded-full object-cover flex-shrink-0"/>:<div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-500 flex-shrink-0">{cat.n}</div>}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className="font-semibold text-sm text-slate-800">{cat.name}</span>
-                  {r.urgent&&<span className="text-[10px] bg-red-500 text-white px-1.5 py-0.5 rounded-full font-bold">URGENT</span>}
-                </div>
-                <div className="flex gap-1 mt-1 flex-wrap">
-                  {[["AM","☀️",r.am],["PM","🌙",r.pm],["Food","🍽️",r.ate],["Water","💧",r.water],["Litter","🪣",r.litter],["Med","💊",r.med]].map(([label,icon,val],i)=>(
-                    <span key={i} className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${val?"bg-emerald-100 text-emerald-700":"bg-slate-100 text-slate-400"}`}>
-                      {val?"✓ ":""}{label}
-                    </span>
-                  ))}
-                </div>
-              </div>
-              <span className="text-slate-300 text-sm">›</span>
-            </div>;
-          })}
-        </div>
-        <div className="p-4">
-          <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">General shift notes</label>
-          <textarea value={gnotes} onChange={e=>saveGnotes(e.target.value)} rows={3} placeholder="Any general observations for this day…" className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none bg-white"/>
-        </div>
-      </div>
-      {sel&&<CatModal cat={sel} rec={recs[sel.id]||{}} ph={dat.catPhotos?.[sel.id]} name={per.name} mark={mark} close={()=>sSel(null)}/>}
-    </div>;
-  }
-
-  function CatModal({cat,rec,ph,name,mark,close}){
-    const [cn,sCn]=useState(rec.careNotes||"");
-    const [mn,sMn]=useState(rec.medNotes||"");
-    const tog=f=>mark(cat.id,f,!rec[f]);
-    const saveN=()=>{mark(cat.id,"careNotes",cn);mark(cat.id,"medNotes",mn);};
-    const Ck=({f,icon,label})=><button onClick={()=>tog(f)} className={`flex flex-col items-center gap-1 p-3 rounded-xl border-2 flex-1 transition-all ${rec[f]?"border-emerald-400 bg-emerald-50":"border-slate-200 bg-white"}`}><span className="text-xl">{icon}</span><span className={`text-xs font-bold ${rec[f]?"text-emerald-700":"text-slate-500"}`}>{label}</span>{rec[f]&&<span className="text-emerald-500 text-xs font-bold">✓</span>}</button>;
-    return <div className="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-end" onClick={close}>
-      <div className="bg-white w-full rounded-t-3xl max-h-[90vh] overflow-auto" onClick={e=>e.stopPropagation()}>
-        <div className="px-5 pt-5 pb-8">
-          <div className="flex items-center gap-3 mb-4">
-            {ph?<img src={ph} alt={cat.name} className="w-14 h-14 rounded-2xl object-cover"/>:<div className="w-14 h-14 rounded-2xl bg-slate-200 flex items-center justify-center text-xl font-bold text-slate-500">#{cat.n}</div>}
-            <div className="flex-1"><h3 className="text-lg font-black text-slate-800">{cat.name}</h3><p className="text-sm text-slate-400">Cat #{cat.n}</p></div>
-            <button onClick={close} className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold">×</button>
-          </div>
-          <button onClick={()=>tog("urgent")} className={`w-full py-2.5 rounded-xl text-sm font-bold mb-4 transition-colors ${rec.urgent?"bg-red-500 text-white":"bg-red-50 text-red-500 border border-red-200"}`}>{rec.urgent?"⚠️ URGENT — Tap to clear":"Mark as URGENT ⚠️"}</button>
-          <div className="grid grid-cols-3 gap-2 mb-4">
-            <Ck f="am"     icon="☀️" label="AM"/>
-            <Ck f="pm"     icon="🌙"  label="PM"/>
-            <Ck f="ate"    icon="🍽️" label="Food"/>
-            <Ck f="water"  icon="💧"  label="Water"/>
-            <Ck f="litter" icon="🪣"  label="Litter"/>
-            <Ck f="med"    icon="💊"  label="Med"/>
-          </div>
-          <div className="space-y-3">
-            <div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">📝 Care notes</label><textarea value={cn} onChange={e=>sCn(e.target.value)} onBlur={saveN} rows={2} placeholder="Behavior, eating habits…" className={IC}/></div>
-            <div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">🏥 Medical observations</label><textarea value={mn} onChange={e=>sMn(e.target.value)} onBlur={saveN} rows={2} placeholder="Health concerns, symptoms…" className={IC}/></div>
-          </div>
-          {rec.updatedBy&&<p className="text-xs text-slate-400 mt-3 text-center">Updated by <strong>{rec.updatedBy}</strong>{rec.updatedAt?" at "+fmtT(rec.updatedAt):""}</p>}
-        </div>
-      </div>
-    </div>;
-  }
-
-  function TasksTab({dat,save,per}){
-    const [nt,sNt]=useState(""),[np,sNp]=useState(""),[nn,sNn]=useState(""),[fl,sFl]=useState(null);
-    const today=tod();const ap=Object.values(dat.people||{}).filter(p=>p.active!==false);const tt=dat.tasks.filter(t=>t.date===today);
-    const add=async()=>{
-      if(!nt||!np){sFl({ok:false,msg:"Select task type and volunteer."});return;}
-      const p=ap.find(x=>x.uid===np);
-      await save("tasks",[...dat.tasks,{id:uid(),date:today,type:nt,personId:np,personName:p?.name||"",note:nn,done:false,createdAt:new Date().toISOString()}]);
-      sNt("");sNp("");sNn("");sFl({ok:true,msg:"Task assigned!"});setTimeout(()=>sFl(null),2000);
-    };
-    const tog=async id=>save("tasks",dat.tasks.map(t=>t.id===id?{...t,done:!t.done,doneAt:new Date().toISOString()}:t));
-    const del=async id=>save("tasks",dat.tasks.filter(t=>t.id!==id));
-    return <div className="p-4 space-y-4">
-      <h2 className="text-base font-bold text-slate-800">Special Tasks — Today</h2>
-      {fl&&<div className={`text-sm px-4 py-3 rounded-xl font-medium ${fl.ok?"bg-emerald-100 text-emerald-700":"bg-red-100 text-red-600"}`}>{fl.msg}</div>}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 space-y-3">
-        <h3 className="font-semibold text-slate-700 text-sm">Assign a special task</h3>
-        <div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Task Type</label><select value={nt} onChange={e=>sNt(e.target.value)} className={IC}><option value="">— Select —</option>{STASKS.map(t=><option key={t} value={t}>{t}</option>)}</select></div>
-        <div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Assign to</label><select value={np} onChange={e=>sNp(e.target.value)} className={IC}><option value="">— Select —</option>{ap.map(p=><option key={p.uid} value={p.uid}>{p.name}</option>)}</select></div>
-        <div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Notes (optional)</label><input value={nn} onChange={e=>sNn(e.target.value)} className={IC} placeholder="Details…"/></div>
-        <button onClick={add} className="w-full bg-slate-900 text-white font-semibold py-3 rounded-xl text-sm">Assign Task</button>
-      </div>
-      {tt.length===0?<Empty icon="📋" title="No special tasks today" subtitle=""/>:tt.map(t=><div key={t.id} className={`bg-white rounded-2xl border shadow-sm p-4 ${t.done?"border-emerald-200 bg-emerald-50 opacity-70":"border-slate-100"}`}><div className="flex items-start justify-between"><div className="flex-1"><p className={`font-semibold text-sm ${t.done?"line-through text-slate-400":"text-slate-800"}`}>{t.type}</p><p className="text-xs text-slate-500 mt-0.5">→ {t.personName}</p>{t.note&&<p className="text-xs text-slate-400 mt-1 italic">{t.note}</p>}</div><div className="flex items-center gap-2 ml-3"><button onClick={()=>tog(t.id)} className={`text-xs px-2.5 py-1 rounded-full font-bold ${t.done?"bg-emerald-500 text-white":"bg-slate-100 text-slate-600"}`}>{t.done?"✓ Done":"Mark done"}</button><button onClick={()=>del(t.id)} className="text-red-300 text-lg font-bold">×</button></div></div></div>)}
-    </div>;
-  }
-
-  function CatsTab({dat,save}){
-    const [srch,sSrch]=useState(""),[ed,sEd]=useState(null),[url,sUrl]=useState("");
-    const vis=CATS.filter(c=>!srch||c.name.toLowerCase().includes(srch.toLowerCase())||String(c.n).includes(srch));
-    const saveP=async()=>{await save("catPhotos",{...dat.catPhotos,[ed.id]:url.trim()});sEd(null);sUrl("");};
-    const remP=async id=>{const u={...dat.catPhotos};delete u[id];await save("catPhotos",u);};
-    return <div className="p-4 space-y-4">
-      <h2 className="text-base font-bold text-slate-800">Cat Photos ({CATS.length} cats)</h2>
-      <input value={srch} onChange={e=>sSrch(e.target.value)} placeholder="🔍 Search cat…" className={IC}/>
-      <div className="space-y-2">{vis.map(cat=>{const ph=dat.catPhotos?.[cat.id];return <div key={cat.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-3 flex items-center gap-3">
-        {ph?<img src={ph} alt={cat.name} className="w-12 h-12 rounded-xl object-cover flex-shrink-0"/>:<div className="w-12 h-12 rounded-xl bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-500 flex-shrink-0">#{cat.n}</div>}
-        <div className="flex-1 min-w-0"><p className="font-semibold text-sm text-slate-800">{cat.name}</p><p className="text-xs text-slate-400">{ph?"Photo added":"No photo yet"}</p></div>
-        <div className="flex gap-2"><button onClick={()=>{sEd(cat);sUrl(ph||"");}} className="text-xs text-teal-600 font-medium">{ph?"Edit":"Add"}</button>{ph&&<button onClick={()=>remP(cat.id)} className="text-xs text-red-400">Remove</button>}</div>
-      </div>;})}
-      </div>
-      {ed&&<div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-end" onClick={()=>sEd(null)}>
-        <div className="bg-white w-full rounded-t-3xl p-5" onClick={e=>e.stopPropagation()}>
-          <div className="flex items-center justify-between mb-4"><h3 className="text-lg font-black text-slate-800">Photo — {ed.name}</h3><button onClick={()=>sEd(null)} className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center font-bold">×</button></div>
-          <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Photo URL</label>
-          <input value={url} onChange={e=>sUrl(e.target.value)} placeholder="https://photos.google.com/…" className={`${IC} mb-2`}/>
-          <p className="text-xs text-slate-400 mb-4">Paste URL from Google Photos, Google Drive, Imgur, etc.</p>
-          {url&&<img src={url} alt="preview" className="w-full h-40 object-cover rounded-xl mb-4" onError={e=>e.target.style.display="none"}/>}
-          <button onClick={saveP} className="w-full bg-slate-900 text-white font-semibold py-3 rounded-xl text-sm">Save Photo</button>
-        </div>
-      </div>}
-    </div>;
-  }
-
-  function PeopleTab({dat,save,myUid}){
-    const [mode,sMode]=useState("list"),[ed,sEd]=useState(null),[form,sForm]=useState({}),[err,sErr]=useState(""),[arch,sArch]=useState(false);
-    const arr=Object.values(dat.people||{});const act=arr.filter(p=>p.active!==false);const arc=arr.filter(p=>p.active===false);const shown=arch?arc:act;
-    const openNew=()=>{sForm({name:"",uid:"",email:"",role:"volunteer",active:true});sEd("new");sMode("form");sErr("");};
-    const openEdit=p=>{sForm({...p});sEd(p);sMode("form");sErr("");};
-    const close=()=>{sMode("list");sEd(null);sForm({});sErr("");};
-    const sf=(k,v)=>sForm(p=>({...p,[k]:v}));
-    const doSave=async()=>{
-      if(!form.name?.trim()){sErr("Name required.");return;}if(!form.uid?.trim()){sErr("Firebase UID required.");return;}if(!form.email?.trim()){sErr("Email required.");return;}
-      if(ed==="new"&&dat.people[form.uid]){sErr("That UID already exists.");return;}
-      await save("people",{...dat.people,[form.uid]:{...form}});close();
-    };
-    const doArch=async p=>{await save("people",{...dat.people,[p.uid]:{...p,active:!p.active}});};
-    const doDel=async p=>{if(p.protected){alert("Protected account.");return;}if(!window.confirm(`Remove ${p.name}?`))return;const u={...dat.people};delete u[p.uid];await save("people",u);};
-    if(mode==="form")return <div className="p-4 space-y-4">
-      <div className="flex items-center gap-3 mb-2"><button onClick={close} className="text-teal-600 text-sm font-medium">← Back</button><h2 className="text-base font-bold text-slate-800">{ed==="new"?"Add Person":"Edit Person"}</h2></div>
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 space-y-3">
-        <div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Full Name *</label><input value={form.name||""} onChange={e=>sf("name",e.target.value)} className={IC} placeholder="Maria Gonz\xe1lez"/></div>
-        <div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Email *</label><input type="email" value={form.email||""} onChange={e=>sf("email",e.target.value)} className={IC}/></div>
-        {ed==="new"&&<div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Firebase UID *</label><input value={form.uid||""} onChange={e=>sf("uid",e.target.value)} className={IC} placeholder="From Firebase Authentication"/><p className="text-xs text-slate-400 mt-1">Firebase Console → Authentication → Users → copy the UID.</p></div>}
-        <div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Role</label><select value={form.role||"volunteer"} onChange={e=>sf("role",e.target.value)} className={IC}><option value="volunteer">Volunteer</option><option value="coordinator">Coordinator</option></select></div>
-        {err&&<div className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-xl">{err}</div>}
-      </div>
-      <button onClick={doSave} className="w-full bg-slate-900 text-white font-semibold py-4 rounded-2xl text-sm">Save Person</button>
-    </div>;
-    return <div className="p-4 space-y-4">
-      <div className="flex items-center justify-between"><h2 className="text-base font-bold text-slate-800">People ({shown.length})</h2><button onClick={openNew} className="bg-slate-900 text-white text-xs px-4 py-2 rounded-xl font-medium">+ Add</button></div>
-      <div className="flex rounded-xl overflow-hidden border border-slate-200"><button onClick={()=>sArch(false)} className={`flex-1 py-2 text-xs font-bold ${!arch?"bg-slate-900 text-white":"bg-white text-slate-500"}`}>Active ({act.length})</button><button onClick={()=>sArch(true)} className={`flex-1 py-2 text-xs font-bold ${arch?"bg-slate-900 text-white":"bg-white text-slate-500"}`}>Archived ({arc.length})</button></div>
-      {shown.length===0?<Empty icon="👤" title={arch?"No archived people":"No people yet"} subtitle=""/>:shown.map(p=><div key={p.uid} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4"><div className="flex items-center justify-between"><div className="min-w-0"><div className="font-semibold text-slate-800 flex items-center gap-1.5">{p.name}{p.uid===myUid&&<span className="text-xs text-teal-600 font-normal">(you)</span>}{p.protected&&<span className="text-xs text-amber-600">🔒</span>}</div><div className="text-sm text-slate-400 mt-0.5 truncate">{p.email}</div><span className={`inline-block mt-1.5 text-xs px-2.5 py-0.5 rounded-full font-medium capitalize ${p.role==="coordinator"?"bg-indigo-100 text-indigo-700":"bg-slate-100 text-slate-600"}`}>{p.role}</span></div><div className="flex flex-col items-end gap-1.5 ml-3 flex-shrink-0"><button onClick={()=>openEdit(p)} className="text-xs text-teal-600 font-medium">Edit</button>{!p.protected&&<button onClick={()=>doArch(p)} className="text-xs text-slate-400">{arch?"Unarchive":"Archive"}</button>}{!p.protected&&<button onClick={()=>doDel(p)} className="text-xs text-red-400">Delete</button>}</div></div></div>)}
-    </div>;
-  }
-
-  function HistTab({dat}){
-    const [date,sDate]=useState(tod()),[recs,sRecs]=useState({}),[notes,sNotes]=useState("");
-    const uref=useRef(null);
-    useEffect(()=>{if(uref.current)uref.current();const unsub=db.listen(`sag_daily/${date}`,v=>sRecs(v||{}));uref.current=unsub;db.get(`sag_daily_notes/${date}`).then(n=>sNotes(n?.notes||""));return()=>{if(uref.current)uref.current();};
-    },[date]);
-    const vis=CATS.filter(c=>recs[c.id]?.am||recs[c.id]?.pm).length;
-    const urg=CATS.filter(c=>recs[c.id]?.urgent);
-    const doPrint=()=>{
-      const rows=CATS.map(c=>{const r=recs[c.id]||{};return`<tr style="border-bottom:1px solid #eee"><td style="padding:4px 6px;text-align:center">${c.n}</td><td style="padding:4px 6px">${c.name}${r.urgent?` <b style="color:red">⚠️</b>`:""}</td><td style="padding:4px;text-align:center">${r.am?"✓":""}</td><td style="padding:4px;text-align:center">${r.pm?"✓":""}</td><td style="padding:4px;text-align:center">${r.ate?"✓":""}</td><td style="padding:4px;text-align:center">${r.water?"✓":""}</td><td style="padding:4px;text-align:center">${r.litter?"✓":""}</td><td style="padding:4px;text-align:center">${r.med?"✓":""}</td><td style="padding:4px 6px;font-size:11px">${r.careNotes||""}</td><td style="padding:4px 6px;font-size:11px">${r.medNotes||""}</td></tr>`;}).join("");
-      document.getElementById("printArea").innerHTML=`<h2>Zaenid Michis — Care Report</h2><p style="color:#666">${fmtD(date)}</p><table style="width:100%;border-collapse:collapse;font-size:12px;margin-top:12px"><thead><tr style="background:#0f172a;color:white"><th>#</th><th style="text-align:left">Name</th><th>AM</th><th>PM</th><th>Ate</th><th>Water</th><th>Litter</th><th>Med</th><th style="text-align:left">Care Notes</th><th style="text-align:left">Medical Notes</th></tr></thead><tbody>${rows}</tbody></table>${notes?`<p style="margin-top:16px"><strong>General notes:</strong> ${notes}</p>`:""}`;
-      window.print();
-    };
-    return <div className="p-4 space-y-4">
-      <div className="flex items-center justify-between"><h2 className="text-base font-bold text-slate-800">History</h2><input type="date" value={date} onChange={e=>sDate(e.target.value)} className="border border-slate-200 rounded-xl px-3 py-1.5 text-sm focus:outline-none bg-white"/></div>
-      <div className="grid grid-cols-3 gap-2">
-        <div className="bg-white rounded-2xl border border-slate-100 p-3 text-center"><p className="text-2xl font-black text-teal-600">{vis}</p><p className="text-xs text-slate-500">Visited</p></div>
-        <div className="bg-white rounded-2xl border border-slate-100 p-3 text-center"><p className="text-2xl font-black text-slate-700">{CATS.length-vis}</p><p className="text-xs text-slate-500">Pending</p></div>
-        <div className="bg-white rounded-2xl border border-slate-100 p-3 text-center"><p className={`text-2xl font-black ${urg.length?"text-red-500":"text-emerald-500"}`}>{urg.length}</p><p className="text-xs text-slate-500">Urgent</p></div>
-      </div>
-      {urg.length>0&&<div className="bg-red-50 border border-red-200 rounded-2xl p-3"><p className="text-red-700 text-xs font-bold mb-1">⚠️ URGENT</p>{urg.map(c=><p key={c.id} className="text-xs text-red-600">{c.n}. {c.name}{recs[c.id]?.medNotes?` — ${recs[c.id].medNotes}`:""}</p>)}</div>}
-      {notes&&<div className="bg-slate-50 border border-slate-200 rounded-2xl p-3"><p className="text-xs font-semibold text-slate-500 mb-1">General notes</p><p className="text-sm text-slate-700">{notes}</p></div>}
-      <button onClick={doPrint} className="w-full bg-slate-100 text-slate-700 font-semibold py-3 rounded-xl text-sm">🖨️ Print Full Report</button>
-    </div>;
-  }
-
-  function SetTab({dat,save,au}){
-    const [np,sNp]=useState(""),[cp,sCp]=useState(""),[msg,sMsg]=useState(null),[busy,sBusy]=useState(false);
-    const chg=async()=>{sMsg(null);if(np.length<6){sMsg({ok:false,t:"Min. 6 characters."});return;}if(np!==cp){sMsg({ok:false,t:"Passwords don't match."});return;}sBusy(true);try{await au.updatePassword(np);sNp("");sCp("");sMsg({ok:true,t:"Password updated!"});}catch(e){if(e.code==="auth/requires-recent-login"){await FAUTH.sendPasswordResetEmail(au.email);sMsg({ok:true,t:"Reset email sent — use that to change your password."});}else sMsg({ok:false,t:"Couldn't update. Try again."});}sBusy(false);};
-    return <div className="p-4 space-y-4">
-      <h2 className="text-base font-bold text-slate-800">Settings</h2>
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 space-y-3">
-        <h3 className="font-semibold text-slate-700 text-sm">🔐 Change My Password</h3>
-        <div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">New password (min. 6)</label><input type="password" value={np} onChange={e=>sNp(e.target.value)} className={IC} placeholder="New password"/></div>
-        <div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Confirm</label><input type="password" value={cp} onChange={e=>sCp(e.target.value)} className={IC} placeholder="Repeat"/></div>
-        {msg&&<div className={`text-sm px-3 py-2 rounded-xl ${msg.ok?"bg-emerald-100 text-emerald-700":"bg-red-100 text-red-600"}`}>{msg.t}</div>}
-        <button onClick={chg} disabled={busy} className="w-full bg-slate-900 text-white font-semibold py-3 rounded-xl text-sm disabled:opacity-50">{busy?"Updating…":"Update Password"}</button>
-      </div>
-      <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4 text-sm text-amber-800 leading-relaxed"><strong>💡 Adding volunteers:</strong> Create their login in Firebase Console first, then add them in People using the same email and their Firebase UID.</div>
-    </div>;
-  }
-
-  function VolApp({au,per,dat,save,logout}){
-    const [tab,sTab]=useState("care"),[ss,sSs]=useState(false);
-    const mt=dat.tasks.filter(t=>t.date===tod()&&t.personId===per.uid);
-    if(ss)return <div className="min-h-screen bg-slate-50 flex flex-col"><header className="bg-slate-900 text-white px-4 py-3 flex items-center gap-3"><button onClick={()=>sSs(false)} className="text-slate-300 text-sm">← Back</button><span className="font-bold text-sm">My Settings</span></header><main className="flex-1 p-4"><VolSet au={au} logout={logout}/></main></div>;
-    return <div className="min-h-screen bg-slate-50 flex flex-col">
-      <header className="no-print bg-slate-900 text-white px-4 py-3 flex items-center justify-between sticky top-0 z-10"><div className="flex items-center gap-2"><span className="text-xl">🐾</span><div><div className="font-bold text-sm">Zaenid Michis</div><div className="text-slate-400 text-xs">Hi, {per.name}!</div></div></div><div className="flex gap-2"><button onClick={()=>sSs(true)} className="text-slate-400 text-xs border border-slate-600 px-3 py-1.5 rounded-lg">⚙️</button><button onClick={logout} className="text-slate-400 text-xs border border-slate-600 px-3 py-1.5 rounded-lg">Sign out</button></div></header>
-      <main className="flex-1 overflow-auto pb-20">
-        {tab==="care"&&<CareTab per={per} dat={dat} isCoord={false}/>}
-        {tab==="tasks"&&<VolTasks tasks={mt} dat={dat} save={save}/>}
-      </main>
-      <nav className="no-print fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex z-10">
-        <button onClick={()=>sTab("care")} className={`flex-1 py-2.5 flex flex-col items-center gap-0.5 ${tab==="care"?"text-teal-600":"text-slate-400"}`}><span className="text-xl leading-none">🐾</span><span className="text-[10px] font-medium">Daily Care</span></button>
-        <button onClick={()=>sTab("tasks")} className={`flex-1 py-2.5 flex flex-col items-center gap-0.5 relative ${tab==="tasks"?"text-teal-600":"text-slate-400"}`}><span className="text-xl leading-none">📋</span><span className="text-[10px] font-medium">My Tasks</span>{mt.filter(t=>!t.done).length>0&&<span className="absolute top-1 right-6 bg-red-500 text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center">{mt.filter(t=>!t.done).length}</span>}</button>
-      </nav>
-    </div>;
-  }
-
-  function VolTasks({tasks,dat,save}){
-    const tog=async id=>save("tasks",dat.tasks.map(t=>t.id===id?{...t,done:!t.done,doneAt:new Date().toISOString()}:t));
-    return <div className="p-4 space-y-3">
-      <h2 className="text-base font-bold text-slate-800">My Special Tasks — Today</h2>
-      {tasks.length===0?<Empty icon="✅" title="No special tasks today" subtitle="Your coordinator will assign tasks here if needed."/>:tasks.map(t=><div key={t.id} onClick={()=>tog(t.id)} className={`bg-white rounded-2xl border shadow-sm p-4 flex items-center gap-3 cursor-pointer ${t.done?"border-emerald-200 bg-emerald-50":""}`}><div className={`w-7 h-7 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${t.done?"bg-emerald-500 border-emerald-500":"border-slate-300"}`}>{t.done&&<span className="text-white text-xs font-bold">✓</span>}</div><div className="flex-1"><p className={`font-semibold text-sm ${t.done?"line-through text-slate-400":"text-slate-800"}`}>{t.type}</p>{t.note&&<p className="text-xs text-slate-400 mt-0.5">{t.note}</p>}{t.done&&t.doneAt&&<p className="text-xs text-emerald-600 mt-0.5">Done at {fmtT(t.doneAt)}</p>}</div></div>)}
-    </div>;
-  }
-
-  function VolSet({au,logout}){
-    const [np,sNp]=useState(""),[cp,sCp]=useState(""),[msg,sMsg]=useState(null),[busy,sBusy]=useState(false);
-    const chg=async()=>{sMsg(null);if(np.length<6){sMsg({ok:false,t:"Min. 6 characters."});return;}if(np!==cp){sMsg({ok:false,t:"Don't match."});return;}sBusy(true);try{await au.updatePassword(np);sNp("");sCp("");sMsg({ok:true,t:"Password updated!"});}catch(e){if(e.code==="auth/requires-recent-login"){await FAUTH.sendPasswordResetEmail(au.email);sMsg({ok:true,t:"Reset email sent."});}else sMsg({ok:false,t:"Couldn't update."});}sBusy(false);};
-    return <div className="space-y-4"><div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 space-y-3"><h3 className="font-semibold text-slate-700 text-sm">🔐 Change My Password</h3><div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">New password</label><input type="password" value={np} onChange={e=>sNp(e.target.value)} className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 bg-white" placeholder="Min. 6 characters"/></div><div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Confirm</label><input type="password" value={cp} onChange={e=>sCp(e.target.value)} className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 bg-white" placeholder="Repeat"/></div>{msg&&<div className={`text-sm px-3 py-2 rounded-xl ${msg.ok?"bg-emerald-100 text-emerald-700":"bg-red-100 text-red-600"}`}>{msg.t}</div>}<button onClick={chg} disabled={busy} className="w-full bg-slate-900 text-white font-semibold py-3 rounded-xl text-sm disabled:opacity-50">{busy?"Updating…":"Update Password"}</button></div><button onClick={logout} className="w-full text-slate-500 text-sm font-medium py-2">Sign out</button></div>;
-  }
-
-  function Empty({icon,title,subtitle}){return <div className="text-center py-14"><div className="text-5xl mb-3">{icon}</div><p className="font-semibold text-slate-700">{title}</p>{subtitle&&<p className="text-sm text-slate-400 mt-1">{subtitle}</p>}</div>;}
-
-  ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+<div id="app"></div>
+<div id="installBox" class="install hidden no-print"></div>
+<script>
+(()=>{
+'use strict';
+const FIREBASE_CONFIG={apiKey:"AIzaSyCiAQmrzirdICxSxxKjf9xaL7lBhU9hdnk",authDomain:"zaenid-michis.firebaseapp.com",databaseURL:"https://zaenid-michis-default-rtdb.firebaseio.com",projectId:"zaenid-michis",storageBucket:"zaenid-michis.firebasestorage.app",messagingSenderId:"754852396413",appId:"1:754852396413:web:f64fa553126cc01e102014"};
+if(!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+const FDB=firebase.database(), AUTH=firebase.auth();
+const SEED={"A1kGcYM92TS8uiQQojDhRunsYSF3":{uid:"A1kGcYM92TS8uiQQojDhRunsYSF3",name:"Richard",role:"coordinator",active:true,protected:true},"ZN34jUTRbgPOTQBdsipQEEKKFAh1":{uid:"ZN34jUTRbgPOTQBdsipQEEKKFAh1",name:"Trizzy",role:"coordinator",active:true,protected:true}};
+const CATS=["Amapola","Amber","Anuel","Atenea","Augusto","Beethoven","Betty","Binx","Black Bean","Bolón","Boo","Boots","Bootstrap (Oriental)","Brad Pitt","Bruno","Buble","Chad","Chleo","Chunky","Cinnamon","Clyde","Coco","Constantine","Coon","Cranberry","Curcuma","D.F.","Donatella la Gorda","Donny","Dora","Dumbo","Dweller","Esmeralda","Fantasma","Fiel","Fig Newton","Firenze","Flash (Mariposa)","Gemini","Gizmo","Goldie","Grecia","Gringo","Grumpilina","Hades","Igorina","Iris (Onion)","Jack","Jefe","Jerry","Jirou","Judy","June","Kevin","Kiko","Leonardo","Lilliepad","Lily","Lion","Llorin","Lola","Lucifer (Soma)","Maluma","Mamey","Matt","Meatball","Miso","Mr. Green","Mr. Wrinkles","Muta","Mystic","Nana","Naranja","Nikolai","Obrero","Oliver","Ominous","Owl","Panda","Pebbles","Persephone","Petal","Pig","Piña","Pseudo","Red","Reese","Ricardo (Enrique)","Rose","Safa","Salem","Sally","Sand","Sapphi","Scotty","Seer","Shadow","Sibling (Kalo)","Silvester (Josie)","Simba","Snowflake","Sombra","Speedy Gonzalez","Spider Kitty","Steve","Stone","Storm","Stripes","Tabby","Taco","Tara","Taro","Teddy","Tiggy","Tigher","Tigress","Tipo","Tita","Triston","Tuna","Tuqui","Twisty","Twity","Utah","Villager","Willow","Yang","Ying"].map((name,i)=>({id:'c'+String(i+1).padStart(3,'0'),n:i+1,name}));
+const STASKS=["Vet appointment","Move cat","Trap feral cat","Transfer to foster","Clean transport kennel","Clean trap cage","Laundry – towels & beds"];
+const CACHE='zm_cache:',QUEUE='zm_queue_v2';
+const state={authState:'loading',user:null,person:null,people:{},catPhotos:{},tasks:[],tab:'care',date:localDate(),daily:{},dailyNotes:'',search:'',filter:'all',selectedCat:null,archived:false,editingPerson:null,photoCat:null,settings:false,online:navigator.onLine,unsubs:[],viewUnsubs:[]};
+const app=document.getElementById('app');
+let installPrompt=null,notesTimer=null;
+function localDate(d=new Date()){const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');return `${y}-${m}-${day}`}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,8)}
+function fmtD(d){return new Date(d+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}
+function fmtT(i){return i?new Date(i).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}):''}
+function esc(s=''){return String(s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
+function readCache(path){try{const v=localStorage.getItem(CACHE+path);return v==null?null:JSON.parse(v)}catch{return null}}
+function writeCache(path,val){try{if(val===undefined) localStorage.removeItem(CACHE+path); else localStorage.setItem(CACHE+path,JSON.stringify(val))}catch{}}
+function getQueue(){try{return JSON.parse(localStorage.getItem(QUEUE)||'[]')}catch{return []}}
+function putQueue(q){try{localStorage.setItem(QUEUE,JSON.stringify(q))}catch{}}
+function deepSet(obj,parts,val,merge=false){if(!parts.length)return val;const out=(obj&&typeof obj==='object')?structuredClone(obj):{};let cur=out;parts.forEach((p,i)=>{if(i===parts.length-1){if(val===undefined)delete cur[p];else if(merge&&cur[p]&&typeof cur[p]==='object'&&val&&typeof val==='object')cur[p]={...cur[p],...val};else cur[p]=val}else{if(!cur[p]||typeof cur[p]!=='object')cur[p]={};cur=cur[p]}});return out}
+const listeners=new Map();
+function emit(path){for(const [p,cbs] of listeners){if(path===p||path.startsWith(p+'/')||p.startsWith(path+'/')){const v=readCache(p);cbs.forEach(cb=>cb(v))}}}
+function localApply(path,val,merge=false){const parts=path.split('/');writeCache(path,merge?{...(readCache(path)||{}),...(val||{})}:val);for(let i=parts.length-1;i>=1;i--){const anc=parts.slice(0,i).join('/'),rel=parts.slice(i);const base=readCache(anc);if(base!==null)writeCache(anc,deepSet(base,rel,val,merge))}emit(path)}
+function queue(op,path,value){const q=getQueue();q.push({id:uid(),op,path,value,at:Date.now()});putQueue(q)}
+async function netWrite(op,path,value){const ref=FDB.ref(path);if(op==='remove')return ref.remove();if(op==='patch')return ref.update(value);return ref.set(value)}
+async function durableWrite(op,path,value){localApply(path,op==='remove'?undefined:value,op==='patch');if(!navigator.onLine){queue(op,path,value);return}try{await Promise.race([netWrite(op,path,value),new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),5000))])}catch{queue(op,path,value)}}
+async function flushQueue(){if(!navigator.onLine)return;let q=getQueue();if(!q.length)return;const left=[];for(const item of q){try{await netWrite(item.op,item.path,item.value)}catch{left.push(item)}}putQueue(left);renderStatus()}
+const db={
+ async get(path){if(navigator.onLine){try{const s=await FDB.ref(path).get(),v=s.exists()?s.val():null;writeCache(path,v);return v}catch{}}return readCache(path)},
+ set:(p,v)=>durableWrite('set',p,v),patch:(p,v)=>durableWrite('patch',p,v),remove:p=>durableWrite('remove',p),
+ listen(path,cb){if(!listeners.has(path))listeners.set(path,new Set());listeners.get(path).add(cb);const cached=readCache(path);if(cached!==null)cb(cached);const ref=FDB.ref(path);const handler=s=>{const v=s.exists()?s.val():null;writeCache(path,v);cb(v)};ref.on('value',handler,()=>{});return()=>{listeners.get(path)?.delete(cb);ref.off('value',handler)}}
+};
+function normalizeTasks(raw){if(!raw)return[];if(Array.isArray(raw))return raw.map((t,i)=>t?{...t,_key:String(i)}:null).filter(Boolean);return Object.entries(raw).map(([k,t])=>t&&typeof t==='object'?{...t,_key:k}:null).filter(Boolean)}
+function mergePeople(raw){const stored=raw&&typeof raw==='object'&&!Array.isArray(raw)?raw:{};const merged={...stored};for(const [k,p] of Object.entries(SEED))merged[k]={...p,...(stored[k]||{}),protected:true};if(state.user&&merged[state.user.uid]&&!merged[state.user.uid].email)merged[state.user.uid].email=state.user.email||'';return merged}
+function cleanup(arr){arr.splice(0).forEach(fn=>{try{fn()}catch{}})}
+function bindCore(){cleanup(state.unsubs);state.unsubs.push(db.listen('sag_people',raw=>{state.people=mergePeople(raw);if(state.user){const p=state.people[state.user.uid];if(p){state.person={...p,uid:state.user.uid};if(p.active===false)state.person={deact:true,email:state.user.email}}}render()}));state.unsubs.push(db.listen('sag_cat_photos',v=>{state.catPhotos=v||{};render()}));state.unsubs.push(db.listen('sag_tasks',v=>{state.tasks=normalizeTasks(v);render()}))}
+function bindDaily(){cleanup(state.viewUnsubs);state.viewUnsubs.push(db.listen(`sag_daily/${state.date}`,v=>{state.daily=v||{};render()}));state.viewUnsubs.push(db.listen(`sag_daily_notes/${state.date}`,v=>{state.dailyNotes=v?.notes||'';renderNotesOnly()}))}
+function renderStatus(){const el=document.getElementById('onlinebar');if(!el)return;const pending=getQueue().length;el.className='onlinebar no-print'+(state.online?'':' off');el.textContent=state.online?(pending?`Online · syncing ${pending} saved change${pending===1?'':'s'}…`:'Online · synced'):`Offline · changes are saved on this device${pending?` (${pending} pending)`:''}`}
+function shell(body,nav=true){const p=state.person||{};return `<div class="screen"><header class="top no-print"><div><div class="name">🐾 Zaenid Michis</div><div class="sub">${p.role==='coordinator'?'Coordinator · ':''}${esc(p.name||'')}</div></div><div class="top-actions">${p.role!=='coordinator'?'<button data-act="settings">⚙️</button>':''}<button data-act="logout">Sign out</button></div></header><div id="onlinebar" class="onlinebar no-print"></div><main class="main">${body}</main>${nav?navHtml():''}</div>`}
+function navHtml(){const coord=state.person?.role==='coordinator';const tabs=coord?[['care','🐾','Daily Care'],['tasks','📋','Tasks'],['cats','🐱','Cats'],['people','👤','People'],['history','📅','History'],['settings','⚙️','Settings']]:[['care','🐾','Daily Care'],['tasks','📋','My Tasks']];return `<nav class="nav no-print">${tabs.map(([id,ic,l])=>`<button data-tab="${id}" class="${state.tab===id?'on':''}"><span class="ico">${ic}</span><span class="lab">${l}</span></button>`).join('')}</nav>`}
+function render(){if(state.authState==='loading'){app.innerHTML='<div class="screen center login"><div class="brand"><div class="paw">🐾</div><h1>Zaenid Michis</h1><p>Loading…</p></div></div>';return}if(state.authState==='out'){renderLogin();return}if(state.person?.notReg||state.person?.deact){const inactive=state.person.deact;app.innerHTML=`<div class="screen center login"><div class="login-box"><div class="brand"><div class="paw">${inactive?'⏸️':'🙈'}</div><h1>${inactive?'Account inactive':'Account not set up'}</h1><p>${esc(state.person.email||'')}</p></div><div class="card"><p class="smalltext">${inactive?'This account has been deactivated.':'Ask a coordinator to add this account in People.'}</p><button class="btn primary w100" data-act="logout">Sign out</button></div></div></div>`;bindClicks();return}if(state.settings&&state.person?.role!=='coordinator'){app.innerHTML=shell(settingsView(true),false);bindClicks();renderStatus();return}let body='';if(state.tab==='care')body=careView();else if(state.tab==='tasks')body=tasksView();else if(state.tab==='cats')body=catsView();else if(state.tab==='people')body=peopleView();else if(state.tab==='history')body=historyView();else body=settingsView(false);app.innerHTML=shell(body,true);bindClicks();if(state.tab==='care')bindDailyControls();if(state.selectedCat)openCatModal();if(state.photoCat)openPhotoModal();if(state.editingPerson)openPersonModal();renderStatus()}
+function renderLogin(){app.innerHTML=`<div class="screen center login"><div class="login-box"><div class="brand"><div class="paw">🐾</div><h1>Zaenid Michis</h1><p>Cat Care Center</p></div><div class="card"><div class="field"><label>Email</label><input id="email" class="input" type="email" autocomplete="email" autocapitalize="none"></div><div class="field"><label>Password</label><input id="password" class="input" type="password" autocomplete="current-password"></div><div id="loginMsg"></div><button class="btn primary w100" data-act="login">Sign In</button><button class="btn ghost w100" data-act="forgot">Forgot password?</button>${!navigator.onLine?'<div class="msg warn">Offline: a previously signed-in session can continue, but a new sign-in needs Internet.</div>':''}</div></div></div>`;bindClicks()}
+function careView(){const urgent=CATS.filter(c=>state.daily[c.id]?.urgent);const visible=CATS.filter(c=>{const r=state.daily[c.id]||{};if(state.search&&!c.name.toLowerCase().includes(state.search.toLowerCase())&&!String(c.n).includes(state.search))return false;if(state.filter==='urgent'&&!r.urgent)return false;if(state.filter==='pending'&&r.am&&r.pm)return false;return true});return `<div class="toolbar no-print"><div class="row"><input id="careDate" class="input grow" type="date" value="${state.date}"><button class="btn small" data-act="print">🖨️ Print</button></div><input id="search" class="input mt8" placeholder="🔍 Search cat by name or number…" value="${esc(state.search)}"><div class="filters">${[['all','All 128'],['urgent','⚠️ Urgent'],['pending','○ Pending']].map(([f,l])=>`<button class="filter ${state.filter===f?'on':''}" data-filter="${f}">${l}</button>`).join('')}</div>${urgent.length?`<div class="urgentbox">⚠️ URGENT: ${urgent.map(c=>esc(c.name)).join(', ')}</div>`:''}</div><div class="list">${visible.map(cat=>catRow(cat)).join('')}</div><div class="notesbox"><div class="field"><label>General shift notes</label><textarea id="dailyNotes" class="input" rows="3" placeholder="Any general observations for this day…">${esc(state.dailyNotes)}</textarea></div><div class="muted">Saved automatically after you stop typing.</div></div>`}
+function catRow(cat){const r=state.daily[cat.id]||{},ph=state.catPhotos[cat.id];const badges=[['AM',r.am],['PM',r.pm],['Food',r.ate],['Water',r.water],['Litter',r.litter],['Med',r.med]];return `<div class="catrow ${r.urgent?'urgent':''}" data-cat="${cat.id}">${ph?`<img class="avatar" src="${esc(ph)}" alt="${esc(cat.name)}">`:`<div class="avatar">${cat.n}</div>`}<div class="catmain"><div class="catname">${esc(cat.name)} ${r.urgent?'<span class="badge urgent">URGENT</span>':''}</div><div class="badges">${badges.map(([l,v])=>`<span class="badge ${v?'done':''}">${v?'✓ ':''}${l}</span>`).join('')}</div></div><div class="chev">›</div></div>`}
+function tasksView(){const today=localDate();const coord=state.person.role==='coordinator';const people=Object.values(state.people).filter(p=>p.active!==false);const tasks=state.tasks.filter(t=>t.date===today&&(coord||t.personId===state.person.uid));let add='';if(coord)add=`<div class="card mb12"><h3 class="smalltext">Assign a special task</h3><div class="field"><label>Task Type</label><select id="taskType" class="input"><option value="">— Select —</option>${STASKS.map(t=>`<option>${esc(t)}</option>`).join('')}</select></div><div class="field"><label>Assign to</label><select id="taskPerson" class="input"><option value="">— Select —</option>${people.map(p=>`<option value="${esc(p.uid)}">${esc(p.name)}</option>`).join('')}</select></div><div class="field"><label>Notes (optional)</label><input id="taskNote" class="input" placeholder="Details…"></div><button class="btn primary w100" data-act="addTask">Assign Task</button><div id="taskMsg"></div></div>`;return `<div class="page"><div class="title-row"><h2>${coord?'Special Tasks — Today':'My Special Tasks — Today'}</h2></div>${add}${tasks.length?tasks.map(t=>`<div class="card task ${t.done?'done':''}"><h4>${esc(t.type)}</h4>${coord?`<p>→ ${esc(t.personName||'')}</p>`:''}${t.note?`<p><em>${esc(t.note)}</em></p>`:''}${t.doneAt&&t.done?`<p class="tealtext">Done at ${fmtT(t.doneAt)}</p>`:''}<div class="task-actions"><button class="btn small ${t.done?'teal':''}" data-task-toggle="${esc(t._key)}">${t.done?'✓ Done':'Mark done'}</button>${coord?`<button class="btn small" data-task-del="${esc(t._key)}">Delete</button>`:''}</div></div>`).join(''):`<div class="empty"><div class="emoji">✅</div><b>No special tasks today</b></div>`}</div>`}
+function catsView(){const q=state.search.toLowerCase();const vis=CATS.filter(c=>!q||c.name.toLowerCase().includes(q)||String(c.n).includes(q));return `<div class="page"><div class="title-row"><h2>Cat Photos (${CATS.length} cats)</h2></div><input id="catSearch" class="input mb12" placeholder="🔍 Search cat…" value="${esc(state.search)}"><div class="photo-grid">${vis.map(c=>{const ph=state.catPhotos[c.id];return `<div class="card photo-item">${ph?`<img class="avatar" src="${esc(ph)}" alt="${esc(c.name)}">`:`<div class="avatar">#${c.n}</div>`}<div class="grow"><b class="smalltext">${esc(c.name)}</b><div class="muted">${ph?'Photo added':'No photo yet'}</div></div><button class="btn small" data-photo="${c.id}">${ph?'Edit':'Add'}</button>${ph?`<button class="btn small" data-photo-remove="${c.id}">Remove</button>`:''}</div>`}).join('')}</div></div>`}
+function peopleView(){const arr=Object.values(state.people),shown=arr.filter(p=>(p.active===false)===state.archived);return `<div class="page"><div class="title-row"><h2>People (${shown.length})</h2><button class="btn primary small" data-act="newPerson">+ Add</button></div><div class="split mb12"><button class="btn ${!state.archived?'primary':''}" data-archive="0">Active (${arr.filter(p=>p.active!==false).length})</button><button class="btn ${state.archived?'primary':''}" data-archive="1">Archived (${arr.filter(p=>p.active===false).length})</button></div>${shown.length?shown.map(p=>`<div class="card person"><div class="grow"><b>${esc(p.name||'')}</b>${p.uid===state.user.uid?' <span class="tealtext smalltext">(you)</span>':''}${p.protected?' 🔒':''}<div class="email">${esc(p.email||'')}</div><span class="pill">${esc(p.role||'volunteer')}</span></div><div><button class="btn small" data-person-edit="${esc(p.uid)}">Edit</button>${!p.protected?`<button class="btn small" data-person-archive="${esc(p.uid)}">${state.archived?'Unarchive':'Archive'}</button><button class="btn small" data-person-del="${esc(p.uid)}">Delete</button>`:''}</div></div>`).join(''):'<div class="empty"><div class="emoji">👤</div><b>No people here</b></div>'}</div>`}
+function historyView(){const rec=state.daily;const visited=CATS.filter(c=>{const r=rec[c.id]||{};return r.am||r.pm||r.ate||r.water||r.litter||r.med||r.careNotes||r.medNotes}).length;const urg=CATS.filter(c=>rec[c.id]?.urgent);return `<div class="page"><div class="title-row"><h2>History</h2><input id="histDate" class="input" style="width:auto" type="date" value="${state.date}"></div><div class="stats mb12"><div class="card stat"><b class="tealtext">${visited}</b><span class="muted">Visited</span></div><div class="card stat"><b>${CATS.length-visited}</b><span class="muted">Pending</span></div><div class="card stat"><b class="${urg.length?'dangertext':'tealtext'}">${urg.length}</b><span class="muted">Urgent</span></div></div>${urg.length?`<div class="msg err"><b>⚠️ URGENT</b><br>${urg.map(c=>`${c.n}. ${esc(c.name)}${rec[c.id]?.medNotes?` — ${esc(rec[c.id].medNotes)}`:''}`).join('<br>')}</div>`:''}${state.dailyNotes?`<div class="card mb12"><b class="smalltext">General notes</b><p class="smalltext">${esc(state.dailyNotes)}</p></div>`:''}<button class="btn w100" data-act="print">🖨️ Print Full Report</button></div>`}
+function settingsView(vol){return `<div class="page"><div class="title-row"><h2>${vol?'My Settings':'Settings'}</h2>${vol?'<button class="btn small" data-act="closeSettings">← Back</button>':''}</div><div class="card"><h3 class="smalltext">🔐 Change My Password</h3><div class="field"><label>New password (min. 6)</label><input id="newPw" type="password" class="input"></div><div class="field"><label>Confirm</label><input id="confirmPw" type="password" class="input"></div><button class="btn primary w100" data-act="changePw">Update Password</button><div id="settingsMsg"></div></div>${!vol?'<div class="msg warn mt12"><b>Adding volunteers:</b> Create their login in Firebase Authentication first, then add them in People with the same UID.</div>':''}</div>`}
+function openCatModal(){const cat=CATS.find(c=>c.id===state.selectedCat);if(!cat)return;const r=state.daily[cat.id]||{},ph=state.catPhotos[cat.id];const modal=document.createElement('div');modal.className='modalbg';modal.id='catModal';modal.innerHTML=`<div class="modal"><div class="modalhead">${ph?`<img class="avatar" style="width:56px;height:56px;border-radius:14px" src="${esc(ph)}">`:`<div class="avatar" style="width:56px;height:56px;border-radius:14px">#${cat.n}</div>`}<div><h3>${esc(cat.name)}</h3><div class="muted">Cat #${cat.n}</div></div><button class="close" data-act="closeCat">×</button></div><button class="urgentbtn ${r.urgent?'on':''}" data-care="urgent">${r.urgent?'⚠️ URGENT — Tap to clear':'Mark as URGENT ⚠️'}</button><div class="checks">${[['am','☀️','AM'],['pm','🌙','PM'],['ate','🍽️','Food'],['water','💧','Water'],['litter','🪣','Litter'],['med','💊','Med']].map(([f,i,l])=>`<button class="check ${r[f]?'on':''}" data-care="${f}"><span class="emoji">${i}</span>${l}${r[f]?' ✓':''}</button>`).join('')}</div><div class="field"><label>📝 Care notes</label><textarea id="careNotes" class="input" rows="2">${esc(r.careNotes||'')}</textarea></div><div class="field"><label>🏥 Medical observations</label><textarea id="medNotes" class="input" rows="2">${esc(r.medNotes||'')}</textarea></div><button class="btn primary w100" data-act="saveCatNotes">Save Notes</button>${r.updatedBy?`<div class="muted mt8" style="text-align:center">Updated by <b>${esc(r.updatedBy)}</b>${r.updatedAt?' at '+fmtT(r.updatedAt):''}</div>`:''}</div>`;document.body.appendChild(modal);modal.addEventListener('click',e=>{if(e.target===modal){state.selectedCat=null;modal.remove()}else handleClick(e)})}
+function openPhotoModal(){const cat=CATS.find(c=>c.id===state.photoCat);if(!cat)return;const ph=state.catPhotos[cat.id]||'';const modal=document.createElement('div');modal.className='modalbg';modal.id='photoModal';modal.innerHTML=`<div class="modal"><div class="modalhead"><h3>Photo — ${esc(cat.name)}</h3><button class="close" data-act="closePhoto">×</button></div><div class="field"><label>Direct Photo URL</label><input id="photoUrl" class="input" value="${esc(ph)}" placeholder="https://…"></div><div class="muted mb12">Use a direct image URL. Some Google Photos/Drive share links do not work as image links.</div><button class="btn primary w100" data-act="savePhoto">Save Photo</button></div>`;document.body.appendChild(modal);modal.addEventListener('click',e=>{if(e.target===modal){state.photoCat=null;modal.remove()}else handleClick(e)})}
+function openPersonModal(){const isNew=state.editingPerson==='new';const p=isNew?{uid:'',name:'',email:'',role:'volunteer',active:true}:state.people[state.editingPerson];if(!p)return;const modal=document.createElement('div');modal.className='modalbg';modal.id='personModal';modal.innerHTML=`<div class="modal"><div class="modalhead"><h3>${isNew?'Add Person':'Edit Person'}</h3><button class="close" data-act="closePerson">×</button></div><div class="field"><label>Full Name *</label><input id="personName" class="input" value="${esc(p.name||'')}"></div><div class="field"><label>Email *</label><input id="personEmail" type="email" class="input" value="${esc(p.email||'')}"></div>${isNew?'<div class="field"><label>Firebase UID *</label><input id="personUid" class="input"><div class="muted mt8">Firebase Console → Authentication → Users → UID</div></div>':''}<div class="field"><label>Role</label><select id="personRole" class="input"><option value="volunteer" ${p.role!=='coordinator'?'selected':''}>Volunteer</option><option value="coordinator" ${p.role==='coordinator'?'selected':''}>Coordinator</option></select></div><div id="personMsg"></div><button class="btn primary w100" data-act="savePerson">Save Person</button></div>`;document.body.appendChild(modal);modal.addEventListener('click',e=>{if(e.target===modal){state.editingPerson=null;modal.remove()}else handleClick(e)})}
+function bindDailyControls(){document.getElementById('careDate')?.addEventListener('change',e=>{state.date=e.target.value;bindDaily();render()});document.getElementById('search')?.addEventListener('input',e=>{state.search=e.target.value;render()});const notes=document.getElementById('dailyNotes');notes?.addEventListener('input',e=>{state.dailyNotes=e.target.value;clearTimeout(notesTimer);notesTimer=setTimeout(()=>db.set(`sag_daily_notes/${state.date}`,{notes:state.dailyNotes,by:state.person.name,at:new Date().toISOString()}),650)});notes?.addEventListener('blur',()=>{clearTimeout(notesTimer);db.set(`sag_daily_notes/${state.date}`,{notes:state.dailyNotes,by:state.person.name,at:new Date().toISOString()})})}
+function renderNotesOnly(){const el=document.getElementById('dailyNotes');if(el&&document.activeElement!==el)el.value=state.dailyNotes||''}
+async function markCare(field){const cat=state.selectedCat,r=state.daily[cat]||{},v=!r[field],now=new Date().toISOString();state.daily={...state.daily,[cat]:{...r,[field]:v,updatedBy:state.person.name,updatedAt:now}};await db.patch(`sag_daily/${state.date}/${cat}`,{[field]:v,updatedBy:state.person.name,updatedAt:now});document.getElementById('catModal')?.remove();state.selectedCat=cat;render();}
+async function saveCatNotes(){const cat=state.selectedCat,now=new Date().toISOString();await db.patch(`sag_daily/${state.date}/${cat}`,{careNotes:document.getElementById('careNotes').value,medNotes:document.getElementById('medNotes').value,updatedBy:state.person.name,updatedAt:now});state.selectedCat=null;document.getElementById('catModal')?.remove();render()}
+async function addTask(){const type=document.getElementById('taskType').value,pid=document.getElementById('taskPerson').value,note=document.getElementById('taskNote').value,msg=document.getElementById('taskMsg');if(!type||!pid){msg.innerHTML='<div class="msg err">Select task type and volunteer.</div>';return}const p=state.people[pid],id=uid();await db.set(`sag_tasks/${id}`,{id,date:localDate(),type,personId:pid,personName:p?.name||'',note,done:false,createdAt:new Date().toISOString()});msg.innerHTML='<div class="msg ok">Task assigned!</div>'}
+async function toggleTask(key){const t=state.tasks.find(x=>x._key===key);if(!t)return;await db.patch(`sag_tasks/${key}`,{done:!t.done,doneAt:!t.done?new Date().toISOString():null})}
+async function deleteTask(key){if(confirm('Delete this task?'))await db.remove(`sag_tasks/${key}`)}
+async function savePhoto(){const url=document.getElementById('photoUrl').value.trim(),id=state.photoCat;if(url)await db.set(`sag_cat_photos/${id}`,url);else await db.remove(`sag_cat_photos/${id}`);state.photoCat=null;document.getElementById('photoModal')?.remove();render()}
+async function savePerson(){const isNew=state.editingPerson==='new',uidv=isNew?document.getElementById('personUid').value.trim():state.editingPerson,name=document.getElementById('personName').value.trim(),email=document.getElementById('personEmail').value.trim(),role=document.getElementById('personRole').value,msg=document.getElementById('personMsg');if(!uidv||!name||!email){msg.innerHTML='<div class="msg err">Name, email and UID are required.</div>';return}if(isNew&&state.people[uidv]){msg.innerHTML='<div class="msg err">That UID already exists.</div>';return}const existing=state.people[uidv]||{};await db.set(`sag_people/${uidv}`,{...existing,uid:uidv,name,email,role,active:existing.active!==false,protected:!!existing.protected});state.editingPerson=null;document.getElementById('personModal')?.remove();render()}
+async function archivePerson(id){const p=state.people[id];if(!p||p.protected)return;await db.patch(`sag_people/${id}`,{active:p.active===false})}
+async function deletePerson(id){const p=state.people[id];if(!p||p.protected)return;if(confirm(`Remove ${p.name}?`))await db.remove(`sag_people/${id}`)}
+async function changePassword(){const a=document.getElementById('newPw').value,b=document.getElementById('confirmPw').value,msg=document.getElementById('settingsMsg');if(a.length<6){msg.innerHTML='<div class="msg err">Minimum 6 characters.</div>';return}if(a!==b){msg.innerHTML='<div class="msg err">Passwords do not match.</div>';return}try{await state.user.updatePassword(a);msg.innerHTML='<div class="msg ok">Password updated!</div>'}catch(e){if(e.code==='auth/requires-recent-login'){await AUTH.sendPasswordResetEmail(state.user.email);msg.innerHTML='<div class="msg ok">Reset email sent.</div>'}else msg.innerHTML='<div class="msg err">Could not update password.</div>'}}
+function printReport(){const rows=CATS.map(c=>{const r=state.daily[c.id]||{};return `<tr><td>${c.n}</td><td>${esc(c.name)}${r.urgent?' ⚠️':''}</td><td>${r.am?'✓':''}</td><td>${r.pm?'✓':''}</td><td>${r.ate?'✓':''}</td><td>${r.water?'✓':''}</td><td>${r.litter?'✓':''}</td><td>${r.med?'✓':''}</td><td>${esc(r.careNotes||'')}</td><td>${esc(r.medNotes||'')}</td></tr>`}).join('');const w=window.open('','_blank');w.document.write(`<!doctype html><html><head><title>Zaenid Michis Report</title><style>body{font-family:Arial;padding:20px}table{width:100%;border-collapse:collapse;font-size:11px}th,td{border-bottom:1px solid #ddd;padding:5px;text-align:left}th{background:#0f172a;color:white}</style></head><body><h2>Zaenid Michis — Care Report</h2><p>${fmtD(state.date)}</p><table><thead><tr><th>#</th><th>Name</th><th>AM</th><th>PM</th><th>Food</th><th>Water</th><th>Litter</th><th>Med</th><th>Care Notes</th><th>Medical Notes</th></tr></thead><tbody>${rows}</tbody></table>${state.dailyNotes?`<p><b>General notes:</b> ${esc(state.dailyNotes)}</p>`:''}<script>window.onload=()=>window.print()<\/script></body></html>`);w.document.close()}
+async function login(){const e=document.getElementById('email').value.trim(),p=document.getElementById('password').value,msg=document.getElementById('loginMsg');if(!e||!p){msg.innerHTML='<div class="msg err">Enter email and password.</div>';return}if(!navigator.onLine){msg.innerHTML='<div class="msg err">Internet is required for a new sign-in.</div>';return}try{await AUTH.signInWithEmailAndPassword(e,p)}catch(err){const map={'auth/invalid-credential':'Incorrect email or password.','auth/wrong-password':'Incorrect password.','auth/user-not-found':'No account found.','auth/too-many-requests':'Too many attempts.'};msg.innerHTML=`<div class="msg err">${map[err.code]||'Could not sign in.'}</div>`}}
+async function forgot(){const e=document.getElementById('email').value.trim(),msg=document.getElementById('loginMsg');if(!e){msg.innerHTML='<div class="msg err">Enter your email first.</div>';return}if(!navigator.onLine){msg.innerHTML='<div class="msg err">Internet is required to send a reset email.</div>';return}try{await AUTH.sendPasswordResetEmail(e);msg.innerHTML='<div class="msg ok">✅ Reset email sent!</div>'}catch{msg.innerHTML='<div class="msg err">Could not send reset email.</div>'}}
+function handleClick(e){const t=e.target.closest('[data-act],[data-tab],[data-filter],[data-cat],[data-care],[data-task-toggle],[data-task-del],[data-photo],[data-photo-remove],[data-person-edit],[data-person-archive],[data-person-del],[data-archive]');if(!t)return;if(t.dataset.tab){state.tab=t.dataset.tab;state.search='';if(state.tab==='care'||state.tab==='history')bindDaily();render();return}if(t.dataset.filter){state.filter=t.dataset.filter;render();return}if(t.dataset.cat){state.selectedCat=t.dataset.cat;openCatModal();return}if(t.dataset.care){markCare(t.dataset.care);return}if(t.dataset.taskToggle){toggleTask(t.dataset.taskToggle);return}if(t.dataset.taskDel){deleteTask(t.dataset.taskDel);return}if(t.dataset.photo){state.photoCat=t.dataset.photo;openPhotoModal();return}if(t.dataset.photoRemove){if(confirm('Remove photo?'))db.remove(`sag_cat_photos/${t.dataset.photoRemove}`);return}if(t.dataset.personEdit){state.editingPerson=t.dataset.personEdit;openPersonModal();return}if(t.dataset.personArchive){archivePerson(t.dataset.personArchive);return}if(t.dataset.personDel){deletePerson(t.dataset.personDel);return}if(t.dataset.archive!==undefined){state.archived=t.dataset.archive==='1';render();return}const a=t.dataset.act;if(a==='logout')AUTH.signOut();else if(a==='login')login();else if(a==='forgot')forgot();else if(a==='settings'){state.settings=true;render()}else if(a==='closeSettings'){state.settings=false;render()}else if(a==='print')printReport();else if(a==='addTask')addTask();else if(a==='newPerson'){state.editingPerson='new';openPersonModal()}else if(a==='closeCat'){state.selectedCat=null;document.getElementById('catModal')?.remove()}else if(a==='saveCatNotes')saveCatNotes();else if(a==='closePhoto'){state.photoCat=null;document.getElementById('photoModal')?.remove()}else if(a==='savePhoto')savePhoto();else if(a==='closePerson'){state.editingPerson=null;document.getElementById('personModal')?.remove()}else if(a==='savePerson')savePerson();else if(a==='changePw')changePassword()}
+function bindClicks(){app.onclick=handleClick;const cs=document.getElementById('catSearch');cs?.addEventListener('input',e=>{state.search=e.target.value;render()});const hd=document.getElementById('histDate');hd?.addEventListener('change',e=>{state.date=e.target.value;bindDaily();render()})}
+function setupInstall(){const box=document.getElementById('installBox');window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installPrompt=e;if(!localStorage.getItem('zm_install_dismissed')){box.classList.remove('hidden');box.innerHTML='<span>Install Zaenid Michis for faster/offline use.</span><button id="doInstall">Install</button><button class="x" id="dismissInstall">×</button>';document.getElementById('doInstall').onclick=async()=>{installPrompt.prompt();await installPrompt.userChoice;box.classList.add('hidden');installPrompt=null};document.getElementById('dismissInstall').onclick=()=>{localStorage.setItem('zm_install_dismissed','1');box.classList.add('hidden')}}});const ios=/iphone|ipad|ipod/i.test(navigator.userAgent),standalone=window.matchMedia('(display-mode: standalone)').matches||navigator.standalone;if(ios&&!standalone&&!localStorage.getItem('zm_ios_tip')){box.classList.remove('hidden');box.innerHTML='<span>On iPhone: Safari → Share → Add to Home Screen.</span><button class="x" id="dismissIos">×</button>';document.getElementById('dismissIos').onclick=()=>{localStorage.setItem('zm_ios_tip','1');box.classList.add('hidden')}}}
+window.addEventListener('online',()=>{state.online=true;flushQueue();renderStatus()});window.addEventListener('offline',()=>{state.online=false;renderStatus()});
+AUTH.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(()=>{});
+AUTH.onAuthStateChanged(async user=>{cleanup(state.unsubs);cleanup(state.viewUnsubs);state.user=user;if(!user){state.authState='out';state.person=null;render();return}state.authState='in';const raw=await db.get('sag_people');state.people=mergePeople(raw);const p=state.people[user.uid];if(!p)state.person={notReg:true,email:user.email};else if(p.active===false)state.person={deact:true,email:user.email};else state.person={...p,uid:user.uid,email:p.email||user.email};bindCore();bindDaily();render();if(navigator.onLine)flushQueue()});
+if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+setupInstall();render();
+})();
 </script>
 </body>
 </html>
