@@ -14,9 +14,7 @@
   <title>Zaenid Michis</title>
   <script>
     if ("serviceWorker" in navigator) {
-      window.addEventListener("load", () => {
-        navigator.serviceWorker.register("./sw.js");
-      });
+      window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js"));
     }
   </script>
   <script src="https://cdn.tailwindcss.com"></script>
@@ -27,1459 +25,773 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
   <style>
-    *, *::before, *::after { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-    body { margin: 0; overscroll-behavior: none; background: #f8fafc; }
-    input, select, textarea { font-size: 16px !important; }
-    @media print {
-      body * { visibility: hidden; }
-      #printArea, #printArea * { visibility: visible; }
-      #printArea { position: absolute; top: 0; left: 0; width: 100%; padding: 20px; }
-      .no-print { display: none !important; }
-    }
+    *,*::before,*::after{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+    body{margin:0;overscroll-behavior:none;background:#f8fafc;}
+    input,select,textarea{font-size:16px!important;}
+    @media print{.no-print{display:none!important;}#printArea{display:block!important;font-family:sans-serif;padding:20px;}}
+    #printArea{display:none;}
   </style>
 </head>
 <body>
-  <div id="root"></div>
+<div id="root"></div>
+<div id="printArea"></div>
+<script type="text/babel">
+  const { useState, useEffect, useRef } = React;
 
-  <script type="text/babel">
-    const { useState, useEffect } = React;
+  // ── Firebase ────────────────────────────────────────────────────
+  if (!firebase.apps.length) {
+    firebase.initializeApp({
+      apiKey:"AIzaSyCiAQmrzirdICxSxxKjf9xaL7lBhU9hdnk",
+      authDomain:"zaenid-michis.firebaseapp.com",
+      databaseURL:"https://zaenid-michis-default-rtdb.firebaseio.com",
+      projectId:"zaenid-michis",
+      storageBucket:"zaenid-michis.firebasestorage.app",
+      messagingSenderId:"754852396413",
+      appId:"1:754852396413:web:f64fa553126cc01e102014"
+    });
+  }
+  const FDB = firebase.database();
+  const FAUTH = firebase.auth();
 
-    // ──────────────────────────────────────────────────────────────
-    // FIREBASE INIT
-    // ──────────────────────────────────────────────────────────────
-    if (!firebase.apps.length) {
-      firebase.initializeApp({
-        apiKey: "AIzaSyCiAQmrzirdICxSxxKjf9xaL7lBhU9hdnk",
-        authDomain: "zaenid-michis.firebaseapp.com",
-        databaseURL: "https://zaenid-michis-default-rtdb.firebaseio.com",
-        projectId: "zaenid-michis",
-        storageBucket: "zaenid-michis.firebasestorage.app",
-        messagingSenderId: "754852396413",
-        appId: "1:754852396413:web:f64fa553126cc01e102014"
-      });
-    }
-    const firebaseDB   = firebase.database();
-    const firebaseAuth = firebase.auth();
+  // ── Seed people (protected, always have access) ─────────────────
+  const SEED_PEOPLE = {
+    "A1kGcYM92TS8uiQQojDhRunsYSF3":{uid:"A1kGcYM92TS8uiQQojDhRunsYSF3",name:"Richard",email:"explorerfta@gmail.com",role:"coordinator",active:true,protected:true},
+    "ZN34jUTRbgPOTQBdsipQEEKKFAh1":{uid:"ZN34jUTRbgPOTQBdsipQEEKKFAh1",name:"Trizzy",email:"trizzycat@hotmail.com",role:"coordinator",active:true,protected:true},
+  };
 
-    // Pre-seeded people — indexed by Firebase UID.
-    // These two accounts always exist and can never be removed from within the app.
-    const SEED_PEOPLE = {
-      "A1kGcYM92TS8uiQQojDhRunsYSF3": {
-        uid: "A1kGcYM92TS8uiQQojDhRunsYSF3",
-        name: "Richard",
-        email: "explorerfta@gmail.com",
-        role: "coordinator",
-        active: true,
-        protected: true,
-      },
-      "ZN34jUTRbgPOTQBdsipQEEKKFAh1": {
-        uid: "ZN34jUTRbgPOTQBdsipQEEKKFAh1",
-        name: "Trizzy",
-        email: "trizzycat@hotmail.com",
-        role: "coordinator",
-        active: true,
-        protected: true,
-      },
+  // ── 128 cats ────────────────────────────────────────────────────
+  const CATS=[
+    {id:"c001",n:1,name:"Amapola"},{id:"c002",n:2,name:"Amber"},{id:"c003",n:3,name:"Anuel"},
+    {id:"c004",n:4,name:"Atenea"},{id:"c005",n:5,name:"Augusto"},{id:"c006",n:6,name:"Beethoven"},
+    {id:"c007",n:7,name:"Betty"},{id:"c008",n:8,name:"Binx"},{id:"c009",n:9,name:"Black Bean"},
+    {id:"c010",n:10,name:"Bolón"},{id:"c011",n:11,name:"Boo"},{id:"c012",n:12,name:"Boots"},
+    {id:"c013",n:13,name:"Bootstrap (Oriental)"},{id:"c014",n:14,name:"Brad Pitt"},{id:"c015",n:15,name:"Bruno"},
+    {id:"c016",n:16,name:"Buble"},{id:"c017",n:17,name:"Chad"},{id:"c018",n:18,name:"Chleo"},
+    {id:"c019",n:19,name:"Chunky"},{id:"c020",n:20,name:"Cinnamon"},{id:"c021",n:21,name:"Clyde"},
+    {id:"c022",n:22,name:"Coco"},{id:"c023",n:23,name:"Constantine"},{id:"c024",n:24,name:"Coon"},
+    {id:"c025",n:25,name:"Cranberry"},{id:"c026",n:26,name:"Curcuma"},{id:"c027",n:27,name:"D.F."},
+    {id:"c028",n:28,name:"Donatella la Gorda"},{id:"c029",n:29,name:"Donny"},{id:"c030",n:30,name:"Dora"},
+    {id:"c031",n:31,name:"Dumbo"},{id:"c032",n:32,name:"Dweller"},{id:"c033",n:33,name:"Esmeralda"},
+    {id:"c034",n:34,name:"Fantasma"},{id:"c035",n:35,name:"Fiel"},{id:"c036",n:36,name:"Fig Newton"},
+    {id:"c037",n:37,name:"Firenze"},{id:"c038",n:38,name:"Flash (Mariposa)"},{id:"c039",n:39,name:"Gemini"},
+    {id:"c040",n:40,name:"Gizmo"},{id:"c041",n:41,name:"Goldie"},{id:"c042",n:42,name:"Grecia"},
+    {id:"c043",n:43,name:"Gringo"},{id:"c044",n:44,name:"Grumpilina"},{id:"c045",n:45,name:"Hades"},
+    {id:"c046",n:46,name:"Igorina"},{id:"c047",n:47,name:"Iris (Onion)"},{id:"c048",n:48,name:"Jack"},
+    {id:"c049",n:49,name:"Jefe"},{id:"c050",n:50,name:"Jerry"},{id:"c051",n:51,name:"Jirou"},
+    {id:"c052",n:52,name:"Judy"},{id:"c053",n:53,name:"June"},{id:"c054",n:54,name:"Kevin"},
+    {id:"c055",n:55,name:"Kiko"},{id:"c056",n:56,name:"Leonardo"},{id:"c057",n:57,name:"Lilliepad"},
+    {id:"c058",n:58,name:"Lily"},{id:"c059",n:59,name:"Lion"},{id:"c060",n:60,name:"Llorin"},
+    {id:"c061",n:61,name:"Lola"},{id:"c062",n:62,name:"Lucifer (Soma)"},{id:"c063",n:63,name:"Maluma"},
+    {id:"c064",n:64,name:"Mamey"},{id:"c065",n:65,name:"Matt"},{id:"c066",n:66,name:"Meatball"},
+    {id:"c067",n:67,name:"Miso"},{id:"c068",n:68,name:"Mr. Green"},{id:"c069",n:69,name:"Mr. Wrinkles"},
+    {id:"c070",n:70,name:"Muta"},{id:"c071",n:71,name:"Mystic"},{id:"c072",n:72,name:"Nana"},
+    {id:"c073",n:73,name:"Naranja"},{id:"c074",n:74,name:"Nikolai"},{id:"c075",n:75,name:"Obrero"},
+    {id:"c076",n:76,name:"Oliver"},{id:"c077",n:77,name:"Ominous"},{id:"c078",n:78,name:"Owl"},
+    {id:"c079",n:79,name:"Panda"},{id:"c080",n:80,name:"Pebbles"},{id:"c081",n:81,name:"Persephone"},
+    {id:"c082",n:82,name:"Petal"},{id:"c083",n:83,name:"Pig"},{id:"c084",n:84,name:"Piña"},
+    {id:"c085",n:85,name:"Pseudo"},{id:"c086",n:86,name:"Red"},{id:"c087",n:87,name:"Reese"},
+    {id:"c088",n:88,name:"Ricardo (Enrique)"},{id:"c089",n:89,name:"Rose"},{id:"c090",n:90,name:"Safa"},
+    {id:"c091",n:91,name:"Salem"},{id:"c092",n:92,name:"Sally"},{id:"c093",n:93,name:"Sand"},
+    {id:"c094",n:94,name:"Sapphi"},{id:"c095",n:95,name:"Scotty"},{id:"c096",n:96,name:"Seer"},
+    {id:"c097",n:97,name:"Shadow"},{id:"c098",n:98,name:"Sibling (Kalo)"},{id:"c099",n:99,name:"Silvester (Josie)"},
+    {id:"c100",n:100,name:"Simba"},{id:"c101",n:101,name:"Snowflake"},{id:"c102",n:102,name:"Sombra"},
+    {id:"c103",n:103,name:"Speedy Gonzalez"},{id:"c104",n:104,name:"Spider Kitty"},{id:"c105",n:105,name:"Steve"},
+    {id:"c106",n:106,name:"Stone"},{id:"c107",n:107,name:"Storm"},{id:"c108",n:108,name:"Stripes"},
+    {id:"c109",n:109,name:"Tabby"},{id:"c110",n:110,name:"Taco"},{id:"c111",n:111,name:"Tara"},
+    {id:"c112",n:112,name:"Taro"},{id:"c113",n:113,name:"Teddy"},{id:"c114",n:114,name:"Tiggy"},
+    {id:"c115",n:115,name:"Tigher"},{id:"c116",n:116,name:"Tigress"},{id:"c117",n:117,name:"Tipo"},
+    {id:"c118",n:118,name:"Tita"},{id:"c119",n:119,name:"Triston"},{id:"c120",n:120,name:"Tuna"},
+    {id:"c121",n:121,name:"Tuqui"},{id:"c122",n:122,name:"Twisty"},{id:"c123",n:123,name:"Twity"},
+    {id:"c124",n:124,name:"Utah"},{id:"c125",n:125,name:"Villager"},{id:"c126",n:126,name:"Willow"},
+    {id:"c127",n:127,name:"Yang"},{id:"c128",n:128,name:"Ying"},
+  ];
+
+  const SPECIAL_TASKS=["Vet appointment","Move cat","Trap feral cat","Transfer to foster","Clean transport kennel","Clean trap cage","Laundry – towels & beds"];
+
+  // ── Helpers ─────────────────────────────────────────────────────
+  const todayISO=()=>new Date().toISOString().slice(0,10);
+  const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+  const fmtDate=d=>new Date(d+"T12:00:00").toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"});
+  const fmtTime=iso=>new Date(iso).toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit"});
+
+  // ── DB ──────────────────────────────────────────────────────────
+  const db={
+    async get(k){try{const s=await FDB.ref(k).get();return s.exists()?s.val():null;}catch{return null;}},
+    async set(k,v){try{await FDB.ref(k).set(v);}catch(e){console.error(e);}},
+    async patch(k,v){try{await FDB.ref(k).update(v);}catch(e){console.error(e);}},
+    listen(k,cb){const r=FDB.ref(k);r.on("value",s=>cb(s.exists()?s.val():null));return()=>r.off("value");},
+  };
+
+  // ── ROOT APP ────────────────────────────────────────────────────
+  function App(){
+    const [authState,setAuthState]=useState("loading");
+    const [authUser, setAuthUser ]=useState(null);
+    const [person,   setPerson   ]=useState(null);
+    const [data,     setData     ]=useState({people:{},catPhotos:{},tasks:[]});
+
+    const loadData=async()=>{
+      const raw=await db.get("sag_people");
+      const stored=(raw&&typeof raw==="object"&&!Array.isArray(raw))?raw:{};
+      const merged={...stored};
+      Object.entries(SEED_PEOPLE).forEach(([u,p])=>{merged[u]={...p,...(stored[u]||{}),protected:true};});
+      const d={people:merged,catPhotos:(await db.get("sag_cat_photos"))??{},tasks:(await db.get("sag_tasks"))??[]};
+      setData(d);return d;
     };
 
-    // ──────────────────────────────────────────────────────────────
-    // CONSTANTS
-    // ──────────────────────────────────────────────────────────────
-    const CAT_ROUTINE_TASKS = [
-      "Clean cage",
-      "Change cat litter",
-      "Wash & refill wet food bowl",
-      "Wash & refill dry food bowl",
-      "Wash & refill water bowl",
-    ];
+    useEffect(()=>{
+      const unsub=FAUTH.onAuthStateChanged(async u=>{
+        if(!u){setAuthUser(null);setPerson(null);setAuthState("signedOut");return;}
+        setAuthUser(u);
+        const d=await loadData();
+        const p=d.people[u.uid];
+        if(!p){setPerson({notRegistered:true,email:u.email});setAuthState("signedIn");return;}
+        if(p.active===false){setPerson({deactivated:true,email:u.email});setAuthState("signedIn");return;}
+        setPerson({...p,uid:u.uid});setAuthState("signedIn");
+      });
+      return()=>unsub();
+    },[]);
 
-    const SPECIAL_TASK_TEMPLATES = [
-      "Vet appointment",
-      "Move cat to another location",
-      "Trap feral cat",
-      "Transfer to foster home",
-      "Clean transport kennel",
-      "Clean trap cage",
-      "Laundry – towels & cat bed",
-    ];
-
-    // ──────────────────────────────────────────────────────────────
-    // HELPERS
-    // ──────────────────────────────────────────────────────────────
-    const todayISO = () => new Date().toISOString().slice(0, 10);
-    const uid      = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-    const fmtDate  = (d) =>
-      new Date(d + "T12:00:00").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
-    const fmtTime  = (iso) =>
-      new Date(iso).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
-    const normEmail = (e) => (e || "").trim().toLowerCase();
-
-    // ──────────────────────────────────────────────────────────────
-    // STORAGE  →  Firebase Realtime Database (shared across devices)
-    // ──────────────────────────────────────────────────────────────
-    const db = {
-      async get(key) {
-        try {
-          const snap = await firebaseDB.ref(key).get();
-          return snap.exists() ? snap.val() : null;
-        } catch { return null; }
-      },
-      async set(key, val) {
-        try { await firebaseDB.ref(key).set(val); } catch(e) { console.error(e); }
-      },
+    const save=async(key,value)=>{
+      const km={people:"sag_people",catPhotos:"sag_cat_photos",tasks:"sag_tasks"};
+      setData(p=>({...p,[key]:value}));
+      await db.set(km[key],value);
     };
 
-    // ──────────────────────────────────────────────────────────────
-    // MAIN APP — UID-based auth + data loading
-    // ──────────────────────────────────────────────────────────────
-    function App() {
-      const [authState, setAuthState] = useState("loading");
-      const [authUser,  setAuthUser ] = useState(null);
-      const [person,    setPerson   ] = useState(null);
-      const [data,      setData     ] = useState({
-        people: {}, locations: [], cats: [], assignments: [],
-      });
+    const logout=()=>FAUTH.signOut();
 
-      // sag_people is now an object keyed by Firebase UID
-      const loadData = async () => {
-        const raw = await db.get("sag_people");
-        // Merge seed people with any stored people (seed always wins for protected accounts)
-        const stored = (raw && typeof raw === "object" && !Array.isArray(raw)) ? raw : {};
-        const merged = { ...stored };
-        Object.entries(SEED_PEOPLE).forEach(([uid, person]) => {
-          merged[uid] = { ...person, ...(stored[uid] || {}), protected: true };
-        });
-        const d = {
-          people:      merged,
-          locations:   (await db.get("sag_locations"))  ?? [],
-          cats:        (await db.get("sag_cats"))        ?? [],
-          assignments: (await db.get("sag_assignments")) ?? [],
-        };
-        setData(d);
-        return d;
-      };
+    if(authState==="loading") return <Splash/>;
+    if(authState==="signedOut") return <LoginScreen/>;
+    if(person?.notRegistered) return <GateScreen icon="🙈" title="Account not set up" msg={`${person.email} hasn't been added to People yet. Ask your coordinator.`} onLogout={logout}/>;
+    if(person?.deactivated)   return <GateScreen icon="⏸️" title="Account inactive"   msg={`${person.email} has been deactivated. Contact your coordinator.`}       onLogout={logout}/>;
+    if(person?.role==="coordinator") return <CoordApp authUser={authUser} person={person} data={data} save={save} onLogout={logout} reload={loadData}/>;
+    return <VolApp authUser={authUser} person={person} data={data} save={save} onLogout={logout}/>;
+  }
 
-      useEffect(() => {
-        const unsub = firebaseAuth.onAuthStateChanged(async (u) => {
-          if (!u) {
-            setAuthUser(null); setPerson(null); setAuthState("signedOut");
-            return;
-          }
-          setAuthUser(u);
-          const d = await loadData();
-          const profile = d.people[u.uid];
+  // ── Splash / Gate ────────────────────────────────────────────────
+  function Splash(){return(<div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center"><div className="text-6xl mb-3">🐾</div><div className="text-white font-bold text-xl">Zaenid Michis</div><div className="text-slate-400 text-sm mt-1">Loading…</div></div>);}
+  function GateScreen({icon,title,msg,onLogout}){return(<div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-6 text-center"><div className="text-6xl mb-4">{icon}</div><h1 className="text-white text-xl font-bold mb-2">{title}</h1><p className="text-slate-400 text-sm max-w-xs mb-6">{msg}</p><button onClick={onLogout} className="text-slate-300 text-sm border border-slate-600 px-4 py-2 rounded-lg">Sign out</button></div>);}
 
-          if (!profile) {
-            setPerson({ notRegistered: true, email: u.email });
-            setAuthState("signedIn");
-            return;
-          }
-          if (profile.active === false) {
-            setPerson({ deactivated: true, email: u.email });
-            setAuthState("signedIn");
-            return;
-          }
-          setPerson({ ...profile, uid: u.uid });
-          setAuthState("signedIn");
-        });
-        return () => unsub();
-      }, []);
-
-      const save = async (key, value) => {
-        const keyMap = {
-          people: "sag_people", locations: "sag_locations",
-          cats: "sag_cats", assignments: "sag_assignments",
-        };
-        setData(prev => ({ ...prev, [key]: value }));
-        await db.set(keyMap[key], value);
-      };
-
-      const refreshPerson = async () => {
-        if (!authUser) return;
-        const d = await loadData();
-        const profile = d.people[authUser.uid];
-        if (profile) setPerson({ ...profile, uid: authUser.uid });
-      };
-
-      const logout = () => firebaseAuth.signOut();
-
-      if (authState === "loading")   return <LoadingScreen />;
-      if (authState === "signedOut") return <LoginScreen />;
-
-      if (person?.notRegistered) return <NotRegisteredScreen email={person.email} onLogout={logout} />;
-      if (person?.deactivated)   return <DeactivatedScreen email={person.email} onLogout={logout} />;
-
-      if (person?.role === "coordinator") {
-        return <CoordApp authUser={authUser} person={person} data={data} save={save} onLogout={logout} onPersonRefresh={refreshPerson} />;
-      }
-      return <VolunteerApp authUser={authUser} person={person} data={data} save={save} onLogout={logout} onPersonRefresh={refreshPerson} />;
-    }
-
-    // ──────────────────────────────────────────────────────────────
-    // LOADING / GATE SCREENS
-    // ──────────────────────────────────────────────────────────────
-    function LoadingScreen() {
-      return (
-        <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-          <div className="text-center">
-            <div className="text-6xl mb-4">🐾</div>
-            <div className="text-white font-bold text-xl">Zaenid Michis</div>
-            <div className="text-slate-400 text-sm mt-1">Loading…</div>
-          </div>
+  // ── Login ─────────────────────────────────────────────────────
+  function LoginScreen(){
+    const [email,setEmail]=useState("");const [pass,setPass]=useState("");
+    const [err,setErr]=useState("");const [busy,setBusy]=useState(false);const [rmsg,setRmsg]=useState("");
+    const submit=async()=>{
+      setErr("");setRmsg("");
+      if(!email.trim()||!pass){setErr("Enter your email and password.");return;}
+      setBusy(true);
+      try{await FAUTH.signInWithEmailAndPassword(email.trim(),pass);}
+      catch(e){const m={"auth/invalid-credential":"Incorrect email or password.","auth/wrong-password":"Incorrect password.","auth/user-not-found":"No account found.","auth/too-many-requests":"Too many attempts. Try later."};setErr(m[e.code]||"Couldn't sign in.");}
+      setBusy(false);
+    };
+    const forgot=async()=>{
+      setErr("");setRmsg("");
+      if(!email.trim()){setErr("Enter your email first.");return;}
+      setBusy(true);
+      try{await FAUTH.sendPasswordResetEmail(email.trim());setRmsg("✅ Reset email sent! Check your inbox.");}
+      catch{setErr("Couldn't send reset email.");}
+      setBusy(false);
+    };
+    return(<div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-6">
+      <div className="w-full max-w-sm">
+        <div className="text-center mb-8"><div className="text-7xl mb-4">🐾</div><h1 className="text-3xl font-bold text-white">Zaenid Michis</h1><p className="text-slate-400 mt-2 text-sm">Cat Care Center</p></div>
+        <div className="bg-white rounded-2xl p-6 shadow-2xl space-y-3">
+          <div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Email</label>
+            <input type="email" autoCapitalize="none" value={email} onChange={e=>{setEmail(e.target.value);setErr("");}} onKeyDown={e=>e.key==="Enter"&&submit()} placeholder="you@email.com" className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:border-teal-500" autoFocus/></div>
+          <div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Password</label>
+            <input type="password" value={pass} onChange={e=>{setPass(e.target.value);setErr("");}} onKeyDown={e=>e.key==="Enter"&&submit()} placeholder="••••••••" className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:border-teal-500"/></div>
+          {err&&<p className="text-red-500 text-sm">{err}</p>}
+          {rmsg&&<p className="text-emerald-600 text-sm">{rmsg}</p>}
+          <button onClick={submit} disabled={busy} className="w-full bg-slate-900 text-white font-semibold py-3.5 rounded-xl text-sm disabled:opacity-50">{busy?"Please wait…":"Sign In"}</button>
+          <button onClick={forgot} disabled={busy} className="w-full text-teal-600 text-sm font-medium py-1">Forgot password?</button>
         </div>
-      );
-    }
+      </div>
+    </div>);
+  }
 
-    function NotRegisteredScreen({ email, onLogout }) {
-      return (
-        <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-6 text-center">
-          <div className="text-6xl mb-4">🙈</div>
-          <h1 className="text-white text-xl font-bold mb-2">Account not set up yet</h1>
-          <p className="text-slate-400 text-sm max-w-xs mb-1">
-            <span className="font-mono">{email}</span> signed in successfully, but hasn't been added to the People list yet.
-          </p>
-          <p className="text-slate-400 text-sm max-w-xs mb-6">Ask your coordinator to add you.</p>
-          <button onClick={onLogout} className="text-slate-300 text-sm border border-slate-600 px-4 py-2 rounded-lg">Sign out</button>
+  // ── COORDINATOR APP ─────────────────────────────────────────────
+  function CoordApp({authUser,person,data,save,onLogout,reload}){
+    const [tab,setTab]=useState("care");
+    const TABS=[
+      {id:"care",  icon:"🐾",label:"Daily Care"},
+      {id:"tasks", icon:"📋",label:"Tasks"},
+      {id:"cats",  icon:"🐱",label:"Cats"},
+      {id:"people",icon:"👤",label:"People"},
+      {id:"history",icon:"📅",label:"History"},
+      {id:"settings",icon:"⚙️",label:"Settings"},
+    ];
+    return(<div className="min-h-screen bg-slate-50 flex flex-col">
+      <header className="no-print bg-slate-900 text-white px-4 py-3 flex items-center justify-between sticky top-0 z-10">
+        <div className="flex items-center gap-2"><span className="text-xl">🐾</span>
+          <div><div className="font-bold text-sm">Zaenid Michis</div><div className="text-slate-400 text-xs">Coordinator · {person.name}</div></div>
         </div>
-      );
-    }
+        <button onClick={onLogout} className="text-slate-400 text-xs border border-slate-600 px-3 py-1.5 rounded-lg">Sign out</button>
+      </header>
+      <main className="flex-1 overflow-auto pb-20">
+        {tab==="care"    &&<DailyCarTab    person={person} data={data} isCoord/>}
+        {tab==="tasks"   &&<TasksTab       data={data} save={save} person={person}/>}
+        {tab==="cats"    &&<CatsPhotoTab   data={data} save={save}/>}
+        {tab==="people"  &&<PeopleTab      data={data} save={save} currentUid={authUser.uid}/>}
+        {tab==="history" &&<HistoryTab     data={data} person={person}/>}
+        {tab==="settings"&&<SettingsTab    data={data} save={save} authUser={authUser}/>}
+      </main>
+      <nav className="no-print fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex z-10">
+        {TABS.map(t=><button key={t.id} onClick={()=>setTab(t.id)} className={`flex-1 py-2 flex flex-col items-center gap-0.5 min-w-0 ${tab===t.id?"text-teal-600":"text-slate-400"}`}>
+          <span className="text-base leading-none">{t.icon}</span>
+          <span className="text-[10px] font-medium leading-none">{t.label}</span>
+        </button>)}
+      </nav>
+    </div>);
+  }
 
-    function DeactivatedScreen({ email, onLogout }) {
-      return (
-        <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-6 text-center">
-          <div className="text-6xl mb-4">⏸️</div>
-          <h1 className="text-white text-xl font-bold mb-2">Account inactive</h1>
-          <p className="text-slate-400 text-sm max-w-xs mb-6">
-            <span className="font-mono">{email}</span> has been deactivated. Contact your coordinator.
-          </p>
-          <button onClick={onLogout} className="text-slate-300 text-sm border border-slate-600 px-4 py-2 rounded-lg">Sign out</button>
-        </div>
-      );
-    }
+  // ── DAILY CARE TAB ──────────────────────────────────────────────
+  function DailyCarTab({person,data,isCoord}){
+    const [date,setDate]=useState(todayISO());
+    const [records,setRecords]=useState({});
+    const [search,setSearch]=useState("");
+    const [filter,setFilter]=useState("all"); // all | urgent | pending
+    const [selected,setSelected]=useState(null); // cat being edited
+    const [genNotes,setGenNotes]=useState("");
+    const unsubRef=useRef(null);
 
-    // ──────────────────────────────────────────────────────────────
-    // LOGIN  (Firebase email + password)
-    // ──────────────────────────────────────────────────────────────
-    function LoginScreen() {
-      const [email,    setEmail   ] = useState("");
-      const [pass,     setPass    ] = useState("");
-      const [error,    setError   ] = useState("");
-      const [busy,     setBusy    ] = useState(false);
-      const [resetMsg, setResetMsg] = useState("");
+    useEffect(()=>{
+      if(unsubRef.current) unsubRef.current();
+      const unsub=db.listen(`sag_daily/${date}`,val=>{setRecords(val||{});});
+      unsubRef.current=unsub;
+      db.get(`sag_daily_notes/${date}`).then(n=>setGenNotes(n?.notes||""));
+      return()=>{ if(unsubRef.current) unsubRef.current(); };
+    },[date]);
 
-      const submit = async () => {
-        setError(""); setResetMsg("");
-        if (!email.trim() || !pass) { setError("Enter your email and password."); return; }
-        setBusy(true);
-        try {
-          await firebaseAuth.signInWithEmailAndPassword(email.trim(), pass);
-        } catch (e) {
-          const map = {
-            "auth/invalid-email": "That email address looks invalid.",
-            "auth/user-not-found": "No account found with that email.",
-            "auth/wrong-password": "Incorrect password.",
-            "auth/invalid-credential": "Incorrect email or password.",
-            "auth/too-many-requests": "Too many attempts. Try again later.",
-            "auth/user-disabled": "This account has been disabled.",
-          };
-          setError(map[e.code] || "Couldn't sign in. Please try again.");
-        }
-        setBusy(false);
-      };
+    const markField=async(catId,field,value)=>{
+      const now=new Date().toISOString();
+      const patch={[field]:value,updatedBy:person.name,updatedAt:now};
+      setRecords(r=>({...r,[catId]:{...(r[catId]||{}),updatedBy:person.name,updatedAt:now,[field]:value}}));
+      await db.patch(`sag_daily/${date}/${catId}`,patch);
+    };
 
-      const forgotPassword = async () => {
-        setError(""); setResetMsg("");
-        if (!email.trim()) { setError("Enter your email above first, then tap \"Forgot password?\""); return; }
-        setBusy(true);
-        try {
-          await firebaseAuth.sendPasswordResetEmail(email.trim());
-          setResetMsg("✅ Password reset email sent! Check your inbox.");
-        } catch (e) {
-          setError("Couldn't send reset email. Check the address and try again.");
-        }
-        setBusy(false);
-      };
+    const saveNotes=async(notes)=>{
+      setGenNotes(notes);
+      await db.set(`sag_daily_notes/${date}`,{notes,updatedBy:person.name,updatedAt:new Date().toISOString()});
+    };
 
-      return (
-        <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-6">
-          <div className="w-full max-w-sm">
-            <div className="text-center mb-8">
-              <div className="text-7xl mb-4">🐾</div>
-              <h1 className="text-3xl font-bold text-white tracking-tight">Zaenid Michis</h1>
-              <p className="text-slate-400 mt-2 text-sm">Volunteer Task Manager</p>
-            </div>
-            <div className="bg-white rounded-2xl p-6 shadow-2xl space-y-3">
-              <div>
-                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Email</label>
-                <input
-                  type="email" autoCapitalize="none" autoCorrect="off"
-                  value={email} onChange={e => { setEmail(e.target.value); setError(""); setResetMsg(""); }}
-                  onKeyDown={e => e.key === "Enter" && submit()}
-                  placeholder="you@email.com"
-                  className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 text-base focus:outline-none focus:border-teal-500"
-                  autoFocus
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Password</label>
-                <input
-                  type="password"
-                  value={pass} onChange={e => { setPass(e.target.value); setError(""); setResetMsg(""); }}
-                  onKeyDown={e => e.key === "Enter" && submit()}
-                  placeholder="••••••••"
-                  className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 text-base focus:outline-none focus:border-teal-500"
-                />
-              </div>
+    const urgents=CATS.filter(c=>records[c.id]?.urgent);
 
-              {error    && <p className="text-red-500 text-sm font-medium">{error}</p>}
-              {resetMsg && <p className="text-emerald-600 text-sm font-medium">{resetMsg}</p>}
+    const filtered=CATS.filter(c=>{
+      if(search&&!c.name.toLowerCase().includes(search.toLowerCase())&&!String(c.n).includes(search)) return false;
+      if(filter==="urgent"&&!records[c.id]?.urgent) return false;
+      if(filter==="pending"){const r=records[c.id];if(r?.am&&r?.pm) return false;}
+      return true;
+    });
 
-              <button onClick={submit} disabled={busy}
-                className="w-full bg-slate-900 text-white font-semibold py-3.5 rounded-xl text-sm tracking-wide disabled:opacity-50">
-                {busy ? "Please wait…" : "Sign In"}
-              </button>
-              <button onClick={forgotPassword} disabled={busy}
-                className="w-full text-teal-600 text-sm font-medium py-1">
-                Forgot password?
-              </button>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    // ──────────────────────────────────────────────────────────────
-    // COORDINATOR APP
-    // ──────────────────────────────────────────────────────────────
-    function CoordApp({ authUser, person, data, save, onLogout, onPersonRefresh }) {
-      const [tab, setTab] = useState("today");
-
-      const TABS = [
-        { id: "today",     icon: "📋", label: "Today"    },
-        { id: "assign",    icon: "✏️", label: "Assign"   },
-        { id: "cats",      icon: "🐱", label: "Cats"     },
-        { id: "locations", icon: "🏠", label: "Places"   },
-        { id: "people",    icon: "👤", label: "People"   },
-        { id: "history",   icon: "📅", label: "History"  },
-        { id: "settings",  icon: "⚙️", label: "Settings" },
-      ];
-
-      return (
-        <div className="min-h-screen bg-slate-50 flex flex-col">
-          <header className="no-print bg-slate-900 text-white px-4 py-3 flex items-center justify-between sticky top-0 z-10">
-            <div className="flex items-center gap-2">
-              <span className="text-xl">🐾</span>
-              <div>
-                <div className="font-bold text-sm leading-tight">Zaenid Michis</div>
-                <div className="text-slate-400 text-xs">Coordinator · {person.name}</div>
-              </div>
-            </div>
-            <button onClick={onLogout} className="text-slate-400 text-xs border border-slate-600 px-3 py-1.5 rounded-lg">
-              Sign out
-            </button>
-          </header>
-
-          <main className="flex-1 overflow-auto pb-20">
-            {tab === "today"     && <TodayTab     data={data} save={save} />}
-            {tab === "assign"    && <AssignTab    data={data} save={save} />}
-            {tab === "cats"      && <CatsTab      data={data} save={save} />}
-            {tab === "locations" && <LocationsTab data={data} save={save} />}
-            {tab === "people"    && <PeopleTab    data={data} save={save} currentUid={authUser.uid} />}
-            {tab === "history"   && <HistoryTab   data={data} />}
-            {tab === "settings"  && <SettingsTab  data={data} save={save} authUser={authUser} />}
-          </main>
-
-          <nav className="no-print fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex z-10">
-            {TABS.map(t => (
-              <button key={t.id} onClick={() => setTab(t.id)}
-                className={`flex-1 py-2 flex flex-col items-center gap-0.5 transition-colors min-w-0 ${
-                  tab === t.id ? "text-teal-600" : "text-slate-400"
-                }`}>
-                <span className="text-base leading-none">{t.icon}</span>
-                <span className="text-[10px] font-medium leading-none">{t.label}</span>
-              </button>
-            ))}
-          </nav>
-        </div>
-      );
-    }
-
-    // ──────────────────────────────────────────────────────────────
-    // PRINT HELPER — builds a printable sheet and triggers window.print()
-    // ──────────────────────────────────────────────────────────────
-    function PrintButton({ label = "🖨️ Print", onPrint }) {
-      return (
-        <button onClick={onPrint}
-          className="no-print bg-slate-100 text-slate-700 text-xs font-semibold px-3 py-2 rounded-lg">
-          {label}
-        </button>
-      );
-    }
-
-    function buildPrintHTML({ title, subtitle, assignments, getPersonName }) {
-      const rows = assignments.map(a => {
-        const taskRows = a.tasks.map(t => `
-          <tr>
-            <td style="padding:4px 8px;border-bottom:1px solid #eee;">${t.completedAt ? "✓" : "☐"}</td>
-            <td style="padding:4px 8px;border-bottom:1px solid #eee;">${t.catName ? `[${t.catName}] ` : ""}${t.name}</td>
-          </tr>`).join("");
-        return `
-          <div style="margin-bottom:18px;page-break-inside:avoid;">
-            <div style="font-weight:bold;font-size:14px;margin-bottom:4px;">
-              ${a.shift === "AM" ? "☀️ Morning" : "🌙 Afternoon"} — ${getPersonName(a.personId)}
-            </div>
-            <table style="width:100%;border-collapse:collapse;font-size:13px;">${taskRows}</table>
-          </div>`;
+    const doPrint=()=>{
+      const rows=CATS.map(c=>{
+        const r=records[c.id]||{};
+        return `<tr style="border-bottom:1px solid #eee;">
+          <td style="padding:4px 6px;text-align:center">${c.n}</td>
+          <td style="padding:4px 6px">${c.name}${r.urgent?` <span style="color:red;font-weight:bold">⚠️</span>`:""}</td>
+          <td style="padding:4px 6px;text-align:center">${r.am?"✓":""}</td>
+          <td style="padding:4px 6px;text-align:center">${r.pm?"✓":""}</td>
+          <td style="padding:4px 6px;text-align:center">${r.ate?"✓":""}</td>
+          <td style="padding:4px 6px;text-align:center">${r.water?"✓":""}</td>
+          <td style="padding:4px 6px;text-align:center">${r.litter?"✓":""}</td>
+          <td style="padding:4px 6px;text-align:center">${r.med?"✓":""}</td>
+          <td style="padding:4px 6px;font-size:11px">${r.careNotes||""}</td>
+          <td style="padding:4px 6px;font-size:11px">${r.medNotes||""}</td>
+        </tr>`;
       }).join("");
-      return `
-        <div id="printArea">
-          <h2 style="margin-bottom:2px;">${title}</h2>
-          <p style="color:#666;margin-top:0;margin-bottom:16px;">${subtitle}</p>
-          ${rows || "<p>No assignments.</p>"}
-        </div>`;
-    }
-
-    function printAssignments(opts) {
-      const old = document.getElementById("printArea");
-      if (old) old.remove();
-      const div = document.createElement("div");
-      div.innerHTML = buildPrintHTML(opts);
-      document.body.appendChild(div.firstElementChild);
+      const html=`<h2 style="margin:0 0 4px">Zaenid Michis — Daily Care Report</h2>
+        <p style="margin:0 0 12px;color:#666">${fmtDate(date)} | Total: ${CATS.length} cats</p>
+        ${urgents.length?`<p style="color:red;margin-bottom:8px;font-weight:bold">⚠️ URGENT: ${urgents.map(c=>c.name).join(", ")}</p>`:""}
+        <table style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead><tr style="background:#0f172a;color:white">
+            <th style="padding:6px">#</th><th style="padding:6px;text-align:left">Name</th>
+            <th style="padding:6px">AM</th><th style="padding:6px">PM</th>
+            <th style="padding:6px">Ate</th><th style="padding:6px">Water</th>
+            <th style="padding:6px">Litter</th><th style="padding:6px">Med</th>
+            <th style="padding:6px;text-align:left">Care notes</th>
+            <th style="padding:6px;text-align:left">Medical notes</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+        ${genNotes?`<p style="margin-top:16px"><strong>General notes:</strong> ${genNotes}</p>`:""}`;
+      document.getElementById("printArea").innerHTML=html;
       window.print();
-    }
+    };
 
-    // ──────────────────────────────────────────────────────────────
-    // TODAY TAB
-    // ──────────────────────────────────────────────────────────────
-    function TodayTab({ data, save }) {
-      const tday = todayISO();
-      const todayAsgns = data.assignments
-        .filter(a => a.date === tday)
-        .sort((a, b) => a.shift.localeCompare(b.shift));
+    const doUrgentPrint=()=>{
+      if(!urgents.length){alert("No urgent cats today.");return;}
+      const rows=urgents.map(c=>{const r=records[c.id]||{};return`<tr style="background:#fff3f3;border-bottom:1px solid #fca5a5"><td style="padding:6px 8px">${c.n}. ${c.name}</td><td style="padding:6px 8px">${r.careNotes||"—"}</td><td style="padding:6px 8px">${r.medNotes||"—"}</td><td style="padding:6px 8px;font-size:11px">${r.updatedBy||""}${r.updatedAt?" at "+fmtTime(r.updatedAt):""}</td></tr>`;}).join("");
+      const html=`<h2 style="color:red;margin:0 0 4px">⚠️ URGENT CATS — ${fmtDate(date)}</h2>
+        <table style="width:100%;border-collapse:collapse;font-size:13px;margin-top:12px">
+          <thead><tr style="background:#ef4444;color:white"><th style="padding:6px;text-align:left">Cat</th><th style="padding:6px;text-align:left">Care notes</th><th style="padding:6px;text-align:left">Medical notes</th><th style="padding:6px;text-align:left">Marked by</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>`;
+      document.getElementById("printArea").innerHTML=html;
+      window.print();
+    };
 
-      const getPerson = id => Object.values(data.people || {}).find(p => p.uid === id || p.id === id);
-      const getPersonName = id => getPerson(id)?.name ?? "Unknown";
-
-      const deleteAssignment = async (id) => {
-        if (!window.confirm("Delete this assignment? This cannot be undone.")) return;
-        await save("assignments", data.assignments.filter(a => a.id !== id));
-      };
-
-      const doPrint = () => printAssignments({
-        title: "Zaenid Michis — Today's Tasks",
-        subtitle: fmtDate(tday),
-        assignments: todayAsgns,
-        getPersonName,
-      });
-
-      return (
-        <div className="p-4 space-y-4">
-          <div className="flex items-baseline justify-between">
-            <h2 className="text-base font-bold text-slate-800">{fmtDate(tday)}</h2>
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-400">{todayAsgns.length} assignment{todayAsgns.length !== 1 ? "s" : ""}</span>
-              {todayAsgns.length > 0 && <PrintButton onPrint={doPrint} />}
-            </div>
-          </div>
-
-          {todayAsgns.length === 0
-            ? <Empty icon="📋" title="No assignments today" subtitle="Go to Assign to create some." />
-            : todayAsgns.map(a => {
-              const person = getPerson(a.personId);
-              const done = a.tasks.filter(t => t.completedAt).length;
-              const pct  = a.tasks.length ? Math.round(done / a.tasks.length * 100) : 0;
-              const isAM = a.shift === "AM";
-              return (
-                <div key={a.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-                  <div className={`px-4 py-3 flex items-center justify-between ${isAM ? "bg-amber-50 border-b border-amber-100" : "bg-indigo-50 border-b border-indigo-100"}`}>
-                    <div className="flex items-center gap-2">
-                      <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${isAM ? "bg-amber-500 text-white" : "bg-indigo-600 text-white"}`}>
-                        {isAM ? "☀️ AM" : "🌙 PM"}
-                      </span>
-                      <span className="font-semibold text-slate-800 text-sm">{person?.name ?? "Unknown"}</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span className={`text-sm font-bold ${pct === 100 ? "text-emerald-600" : "text-slate-500"}`}>{done}/{a.tasks.length}</span>
-                      <button onClick={() => deleteAssignment(a.id)} className="text-slate-300 font-bold text-lg leading-none">✕</button>
-                    </div>
-                  </div>
-                  <div className="h-1.5 bg-slate-100">
-                    <div className={`h-full transition-all duration-500 ${pct === 100 ? "bg-emerald-500" : isAM ? "bg-amber-400" : "bg-indigo-500"}`} style={{ width: `${pct}%` }} />
-                  </div>
-                  <div className="px-4 py-3 space-y-1.5">
-                    {a.tasks.map(t => (
-                      <div key={t.id} className="flex items-center gap-2 text-sm">
-                        <span className={t.completedAt ? "text-emerald-500" : "text-slate-300"}>{t.completedAt ? "✓" : "○"}</span>
-                        <span className={`flex-1 ${t.completedAt ? "line-through text-slate-400" : "text-slate-700"}`}>
-                          {t.catName && <span className="font-semibold text-slate-500">[{t.catName}]</span>}{t.catName ? " " : ""}{t.name}
-                        </span>
-                        {t.completedAt && <span className="text-slate-300 text-xs flex-shrink-0">{fmtTime(t.completedAt)}</span>}
-                      </div>
-                    ))}
-                  </div>
-                  {pct === 100 && (
-                    <div className="px-4 pb-3">
-                      <div className="bg-emerald-50 text-emerald-700 text-xs font-semibold text-center py-2 rounded-xl border border-emerald-100">
-                        🎉 All tasks complete!
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })
-          }
+    return(<div className="flex flex-col h-full">
+      {/* Header controls */}
+      <div className="no-print sticky top-0 bg-white border-b border-slate-100 z-10 px-4 py-3 space-y-2">
+        <div className="flex items-center gap-2">
+          <input type="date" value={date} onChange={e=>setDate(e.target.value)} className="flex-1 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"/>
+          <button onClick={doPrint} className="text-xs bg-slate-100 text-slate-700 px-3 py-2 rounded-lg font-semibold flex-shrink-0">🖨️ Report</button>
+          {urgents.length>0&&<button onClick={doUrgentPrint} className="text-xs bg-red-100 text-red-700 px-3 py-2 rounded-lg font-semibold flex-shrink-0">🚨 Urgent</button>}
         </div>
-      );
-    }
+        <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="🔍 Search cat by name or number…" className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"/>
+        <div className="flex gap-1.5">
+          {[["all","All 128"],["urgent","🚨 Urgent"],["pending","○ Pending"]].map(([f,l])=>(
+            <button key={f} onClick={()=>setFilter(f)} className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-colors ${filter===f?"bg-slate-900 text-white":"bg-slate-100 text-slate-600"}`}>{l}</button>
+          ))}
+        </div>
+        {urgents.length>0&&<div className="bg-red-50 border border-red-200 rounded-xl px-3 py-2"><p className="text-red-700 text-xs font-bold">⚠️ URGENT: {urgents.map(c=>c.name).join(", ")}</p></div>}
+      </div>
 
-    // ──────────────────────────────────────────────────────────────
-    // ASSIGN TAB
-    // ──────────────────────────────────────────────────────────────
-    function AssignTab({ data, save }) {
-      const [date,       setDate      ] = useState(todayISO());
-      const [shift,      setShift     ] = useState("AM");
-      const [personId,   setPersonId  ] = useState("");
-      const [selCats,    setSelCats   ] = useState([]);
-      const [selLocs,    setSelLocs   ] = useState([]);
-      const [specials,   setSpecials  ] = useState([]);
-      const [newSpecial, setNewSpecial] = useState("");
-      const [flash,      setFlash     ] = useState(null);
-
-      const toggleCat = id => setSelCats(p => p.includes(id) ? p.filter(x => x !== id) : [...p, id]);
-      const toggleLoc = id => setSelLocs(p => p.includes(id) ? p.filter(x => x !== id) : [...p, id]);
-
-      const addSpecial = () => {
-        const t = newSpecial.trim();
-        if (t && !specials.includes(t)) { setSpecials(p => [...p, t]); setNewSpecial(""); }
-      };
-
-      const buildTasks = () => {
-        const tasks = [];
-        selCats.forEach(catId => {
-          const cat = data.cats.find(c => c.id === catId);
-          if (!cat) return;
-          const locName = data.locations.find(l => l.id === cat.locationId)?.name ?? "";
-          CAT_ROUTINE_TASKS.forEach(name =>
-            tasks.push({ id: uid(), type: "routine", catId, catName: cat.name, locationName: locName, name, completedAt: null })
-          );
-          (cat.medications || []).forEach(med => {
-            if (med.schedule === "Both" || med.schedule === shift) {
-              tasks.push({
-                id: uid(), type: "medication", catId, catName: cat.name, locationName: locName,
-                name: `Give ${med.name}${med.dosage ? " " + med.dosage : ""}${med.notes ? " — " + med.notes : ""}`,
-                completedAt: null,
-              });
-            }
-          });
-        });
-        selLocs.forEach(locId => {
-          const loc = data.locations.find(l => l.id === locId);
-          if (!loc) return;
-          tasks.push({ id: uid(), type: "location", locationId: locId, locationName: loc.name, name: `Clean ${loc.name}`, completedAt: null });
-        });
-        specials.forEach(name => tasks.push({ id: uid(), type: "special", name, completedAt: null }));
-        return tasks;
-      };
-
-      const handleSave = async () => {
-        if (!personId) { setFlash({ ok: false, msg: "Please select a volunteer." }); return; }
-        const tasks = buildTasks();
-        if (!tasks.length) { setFlash({ ok: false, msg: "Add at least one cat, location, or special task." }); return; }
-        const asgn = { id: uid(), date, shift, personId, tasks, createdAt: new Date().toISOString() };
-        await save("assignments", [...data.assignments, asgn]);
-        setSelCats([]); setSelLocs([]); setSpecials([]); setPersonId("");
-        setFlash({ ok: true, msg: "Assignment saved!" });
-        setTimeout(() => setFlash(null), 3000);
-      };
-
-      const activeCats   = data.cats.filter(c => c.active !== false);
-      const activePeople = Object.values(data.people || {}).filter(p => p.active !== false);
-
-      return (
-        <div className="p-4 space-y-4">
-          <h2 className="text-base font-bold text-slate-800">Create Assignment</h2>
-
-          {flash && (
-            <div className={`text-sm px-4 py-3 rounded-xl font-medium ${flash.ok ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-600"}`}>
-              {flash.msg}
-            </div>
-          )}
-
-          <Card title="Assignment Details">
-            <div className="space-y-3">
-              <div>
-                <Label>Date</Label>
-                <input type="date" value={date} onChange={e => setDate(e.target.value)} className={inputCls} />
-              </div>
-              <div>
-                <Label>Shift</Label>
-                <div className="grid grid-cols-2 gap-2">
-                  {["AM", "PM"].map(s => (
-                    <button key={s} onClick={() => setShift(s)}
-                      className={`py-2.5 rounded-xl text-sm font-semibold border-2 transition-all ${
-                        shift === s
-                          ? s === "AM" ? "bg-amber-500 border-amber-500 text-white" : "bg-indigo-600 border-indigo-600 text-white"
-                          : "border-slate-200 text-slate-500"
-                      }`}>
-                      {s === "AM" ? "☀️ Morning" : "🌙 Afternoon"}
-                    </button>
+      {/* Cat list */}
+      <div className="flex-1 overflow-auto">
+        {filtered.length===0?(<div className="text-center py-12 text-slate-400"><div className="text-4xl mb-2">🔍</div><p>No cats match your filter.</p></div>)
+        :(<div className="divide-y divide-slate-100">
+          {filtered.map(cat=>{
+            const r=records[cat.id]||{};
+            const photo=data.catPhotos?.[cat.id];
+            const isUrgent=!!r.urgent;
+            return(<div key={cat.id} onClick={()=>setSelected(cat)} className={`flex items-center gap-3 px-4 py-3 cursor-pointer active:bg-slate-50 ${isUrgent?"bg-red-50 border-l-4 border-red-500":""}`}>
+              {photo?<img src={photo} alt={cat.name} className="w-10 h-10 rounded-full object-cover flex-shrink-0"/>:<div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center flex-shrink-0 text-xs font-bold text-slate-500">{cat.n}</div>}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <span className="font-semibold text-sm text-slate-800">{cat.name}</span>
+                  {isUrgent&&<span className="text-xs bg-red-500 text-white px-1.5 py-0.5 rounded-full font-bold">⚠️ URGENT</span>}
+                </div>
+                <div className="flex gap-2 mt-1">
+                  {[["AM",r.am,"☀️"],["PM",r.pm,"🌙"],["Ate",r.ate,"🍽️"],["💧",r.water,"💧"],["🪣",r.litter,"🪣"],["Med",r.med,"💊"]].map(([label,val,icon])=>(
+                    <span key={label} className={`text-xs font-semibold ${val?"text-emerald-600":"text-slate-300"}`}>{icon}</span>
                   ))}
                 </div>
               </div>
-              <div>
-                <Label>Volunteer</Label>
-                <select value={personId} onChange={e => setPersonId(e.target.value)} className={inputCls}>
-                  <option value="">— Select volunteer —</option>
-                  {activePeople.map(p => <option key={p.uid} value={p.uid}>{p.name}{p.role === "coordinator" ? " (Coordinator)" : ""}</option>)}
-                </select>
-              </div>
+              <span className="text-slate-300 text-sm flex-shrink-0">›</span>
+            </div>);
+          })}
+        </div>)}
+
+        {/* General notes */}
+        <div className="p-4">
+          <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">General shift notes</label>
+          <textarea value={genNotes} onChange={e=>saveNotes(e.target.value)} rows={3} placeholder="Any general observations for this day…" className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 bg-white"/>
+        </div>
+      </div>
+
+      {/* Cat detail modal */}
+      {selected&&<CatModal cat={selected} record={records[selected.id]||{}} photo={data.catPhotos?.[selected.id]} personName={person.name} onMark={markField} onClose={()=>setSelected(null)}/>}
+    </div>);
+  }
+
+  // ── Cat detail modal ────────────────────────────────────────────
+  function CatModal({cat,record,photo,personName,onMark,onClose}){
+    const [careNotes,setCareNotes]=useState(record.careNotes||"");
+    const [medNotes, setMedNotes ]=useState(record.medNotes||"");
+
+    const toggle=(field)=>onMark(cat.id,field,!record[field]);
+    const saveNotes=()=>{onMark(cat.id,"careNotes",careNotes);onMark(cat.id,"medNotes",medNotes);};
+
+    const Check=({field,icon,label})=>(
+      <button onClick={()=>toggle(field)} className={`flex flex-col items-center gap-1 p-3 rounded-xl border-2 flex-1 transition-all ${record[field]?"border-emerald-400 bg-emerald-50":"border-slate-200 bg-white"}`}>
+        <span className="text-xl">{icon}</span>
+        <span className={`text-xs font-bold ${record[field]?"text-emerald-700":"text-slate-500"}`}>{label}</span>
+        {record[field]&&<span className="text-emerald-500 text-xs font-bold">✓</span>}
+      </button>
+    );
+
+    return(<div className="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-end" onClick={onClose}>
+      <div className="bg-white w-full rounded-t-3xl max-h-[90vh] overflow-auto" onClick={e=>e.stopPropagation()}>
+        <div className="px-5 pt-5 pb-3">
+          <div className="flex items-center gap-3 mb-4">
+            {photo?<img src={photo} alt={cat.name} className="w-14 h-14 rounded-2xl object-cover"/>:<div className="w-14 h-14 rounded-2xl bg-slate-200 flex items-center justify-center text-xl font-bold text-slate-500">#{cat.n}</div>}
+            <div className="flex-1">
+              <h3 className="text-lg font-black text-slate-800">{cat.name}</h3>
+              <p className="text-sm text-slate-400">Cat #{cat.n}</p>
             </div>
-          </Card>
+            <button onClick={onClose} className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold">×</button>
+          </div>
 
-          <Card title="🐱 Cats to care for">
-            {activeCats.length === 0
-              ? <p className="text-slate-400 text-sm">No cats set up yet. Go to the Cats tab first.</p>
-              : <div className="space-y-2">
-                {activeCats.map(cat => {
-                  const loc = data.locations.find(l => l.id === cat.locationId);
-                  const sel = selCats.includes(cat.id);
-                  return (
-                    <div key={cat.id} onClick={() => toggleCat(cat.id)}
-                      className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${sel ? "border-teal-400 bg-teal-50" : "border-slate-100"}`}>
-                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${sel ? "bg-teal-500 border-teal-500" : "border-slate-300"}`}>
-                        {sel && <span className="text-white text-xs font-bold">✓</span>}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium text-sm text-slate-800">{cat.name}</div>
-                        <div className="text-xs text-slate-400">{loc?.name ?? "No location"}{cat.cageNumber ? ` · ${cat.cageNumber}` : ""}</div>
-                      </div>
-                      {(cat.medications || []).length > 0 && (
-                        <span className="text-xs bg-rose-100 text-rose-600 px-2 py-0.5 rounded-full font-medium flex-shrink-0">💊</span>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            }
-          </Card>
-
-          <Card title="🏠 Apartments / Catios to clean">
-            {data.locations.length === 0
-              ? <p className="text-slate-400 text-sm">No locations added yet. Go to Places first.</p>
-              : <div className="space-y-2">
-                {data.locations.map(loc => {
-                  const sel = selLocs.includes(loc.id);
-                  return (
-                    <div key={loc.id} onClick={() => toggleLoc(loc.id)}
-                      className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${sel ? "border-teal-400 bg-teal-50" : "border-slate-100"}`}>
-                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${sel ? "bg-teal-500 border-teal-500" : "border-slate-300"}`}>
-                        {sel && <span className="text-white text-xs font-bold">✓</span>}
-                      </div>
-                      <span className="text-sm font-medium text-slate-800">{loc.name}</span>
-                      <span className="text-xs text-slate-400 capitalize ml-auto">{loc.type}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            }
-          </Card>
-
-          <Card title="⭐ Special Tasks">
-            <div className="flex flex-wrap gap-1.5 mb-3">
-              {SPECIAL_TASK_TEMPLATES.map(t => (
-                <button key={t} onClick={() => { if (!specials.includes(t)) setSpecials(p => [...p, t]); }}
-                  className={`text-xs px-3 py-1.5 rounded-full border transition-all ${
-                    specials.includes(t) ? "bg-orange-100 border-orange-300 text-orange-700" : "border-slate-200 text-slate-500"
-                  }`}>{t}
-                </button>
-              ))}
-            </div>
-            <div className="flex gap-2 mb-2">
-              <input value={newSpecial} onChange={e => setNewSpecial(e.target.value)}
-                onKeyDown={e => e.key === "Enter" && addSpecial()}
-                placeholder="Add custom task…" className={`flex-1 ${inputCls}`} />
-              <button onClick={addSpecial} className="bg-slate-100 text-slate-700 px-4 rounded-xl text-sm font-medium">Add</button>
-            </div>
-            {specials.map((t, i) => (
-              <div key={i} className="flex items-center justify-between bg-orange-50 border border-orange-100 rounded-xl px-3 py-2 mb-2">
-                <span className="text-sm text-orange-800">⭐ {t}</span>
-                <button onClick={() => setSpecials(p => p.filter((_, idx) => idx !== i))} className="text-slate-400 ml-2 text-lg leading-none font-bold">×</button>
-              </div>
-            ))}
-          </Card>
-
-          <button onClick={handleSave}
-            className="w-full bg-slate-900 text-white font-semibold py-4 rounded-2xl text-sm tracking-wide">
-            Save Assignment
+          {/* Urgent toggle */}
+          <button onClick={()=>toggle("urgent")} className={`w-full py-2.5 rounded-xl text-sm font-bold mb-4 transition-colors ${record.urgent?"bg-red-500 text-white":"bg-red-50 text-red-500 border border-red-200"}`}>
+            {record.urgent?"⚠️ URGENT — Tap to clear":"Mark as URGENT ⚠️"}
           </button>
-        </div>
-      );
-    }
 
-    // ──────────────────────────────────────────────────────────────
-    // CATS TAB  (Archive vs permanent Delete)
-    // ──────────────────────────────────────────────────────────────
-    function CatsTab({ data, save }) {
-      const [mode,    setMode   ] = useState("list");
-      const [editing, setEditing] = useState(null);
-      const [form,    setForm   ] = useState({});
-      const [showArchived, setShowArchived] = useState(false);
-
-      const openNew  = () => { setForm({ name: "", locationId: "", cageNumber: "", status: "resident", medications: [], notes: "", active: true }); setEditing("new"); setMode("form"); };
-      const openEdit = (cat) => { setForm({ ...cat, medications: cat.medications ? [...cat.medications] : [] }); setEditing(cat); setMode("form"); };
-      const close    = () => { setMode("list"); setEditing(null); setForm({}); };
-      const setF     = (k, v) => setForm(p => ({ ...p, [k]: v }));
-
-      const addMed    = () => setF("medications", [...(form.medications || []), { id: uid(), name: "", dosage: "", schedule: "AM", notes: "" }]);
-      const updMed    = (i, k, v) => { const m = [...(form.medications || [])]; m[i] = { ...m[i], [k]: v }; setF("medications", m); };
-      const removeMed = (i) => setF("medications", (form.medications || []).filter((_, idx) => idx !== i));
-
-      const handleSave = async () => {
-        if (!form.name?.trim()) return;
-        const cats = editing === "new"
-          ? [...data.cats, { ...form, id: uid() }]
-          : data.cats.map(c => c.id === editing.id ? { ...form, id: c.id } : c);
-        await save("cats", cats);
-        close();
-      };
-
-      const archiveCat = async (cat) => {
-        await save("cats", data.cats.map(c => c.id === cat.id ? { ...c, active: !c.active } : c));
-      };
-
-      const deleteCat = async (cat) => {
-        if (!window.confirm(`Permanently delete "${cat.name}"? This removes their profile completely and cannot be undone. Past task history will keep their name, but they'll no longer be selectable.`)) return;
-        await save("cats", data.cats.filter(c => c.id !== cat.id));
-      };
-
-      const activeCats   = data.cats.filter(c => c.active !== false);
-      const archivedCats = data.cats.filter(c => c.active === false);
-      const shownCats    = showArchived ? archivedCats : activeCats;
-      const getLocName   = id => data.locations.find(l => l.id === id)?.name ?? "—";
-      const statusColor  = { resident: "bg-emerald-100 text-emerald-700", feral: "bg-red-100 text-red-700", foster: "bg-violet-100 text-violet-700" };
-
-      if (mode === "form") {
-        return (
-          <div className="p-4 space-y-4">
-            <BackBar onBack={close} title={editing === "new" ? "Add Cat" : "Edit Cat"} />
-            <Card>
-              <div className="space-y-3">
-                <Field label="Name *" value={form.name || ""} onChange={v => setF("name", v)} placeholder="e.g. Luna" />
-                <div>
-                  <Label>Location</Label>
-                  <select value={form.locationId || ""} onChange={e => setF("locationId", e.target.value)} className={inputCls}>
-                    <option value="">— None —</option>
-                    {data.locations.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
-                  </select>
-                </div>
-                <Field label="Cage / Catio Number" value={form.cageNumber || ""} onChange={v => setF("cageNumber", v)} placeholder="e.g. 3A" />
-                <div>
-                  <Label>Status</Label>
-                  <select value={form.status || "resident"} onChange={e => setF("status", e.target.value)} className={inputCls}>
-                    <option value="resident">Resident</option>
-                    <option value="feral">Feral / Undomesticated</option>
-                    <option value="foster">Foster</option>
-                  </select>
-                </div>
-                <Field label="Notes" value={form.notes || ""} onChange={v => setF("notes", v)} placeholder="e.g. Shy, needs extra time" multiline />
-              </div>
-            </Card>
-
-            <Card title="💊 Medications">
-              {(form.medications || []).length === 0
-                ? <p className="text-slate-400 text-sm mb-3">No medications added.</p>
-                : <div className="space-y-3 mb-3">
-                  {(form.medications || []).map((med, i) => (
-                    <div key={med.id || i} className="border border-slate-200 rounded-xl p-3 space-y-2">
-                      <Field label="Medication name" value={med.name} onChange={v => updMed(i, "name", v)} placeholder="e.g. Amoxicillin" />
-                      <Field label="Dosage" value={med.dosage} onChange={v => updMed(i, "dosage", v)} placeholder="e.g. 50mg" />
-                      <div>
-                        <Label>Schedule</Label>
-                        <select value={med.schedule} onChange={e => updMed(i, "schedule", e.target.value)} className={inputCls}>
-                          <option value="AM">Morning (AM) only</option>
-                          <option value="PM">Afternoon (PM) only</option>
-                          <option value="Both">AM & PM — twice daily</option>
-                        </select>
-                      </div>
-                      <Field label="Notes" value={med.notes} onChange={v => updMed(i, "notes", v)} placeholder="e.g. Give with food" />
-                      <button onClick={() => removeMed(i)} className="text-red-400 text-xs font-medium">Remove medication</button>
-                    </div>
-                  ))}
-                </div>
-              }
-              <button onClick={addMed} className="w-full border-2 border-dashed border-slate-200 text-slate-500 py-2.5 rounded-xl text-sm font-medium">
-                + Add Medication
-              </button>
-            </Card>
-
-            <button onClick={handleSave} className="w-full bg-slate-900 text-white font-semibold py-4 rounded-2xl text-sm">Save Cat</button>
-          </div>
-        );
-      }
-
-      return (
-        <div className="p-4 space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-base font-bold text-slate-800">Cats ({shownCats.length})</h2>
-            <button onClick={openNew} className="bg-slate-900 text-white text-xs px-4 py-2 rounded-xl font-medium">+ Add Cat</button>
+          {/* Checkboxes */}
+          <div className="grid grid-cols-3 gap-2 mb-4">
+            <Check field="am"     icon="☀️" label="AM"/>
+            <Check field="pm"     icon="🌙" label="PM"/>
+            <Check field="ate"    icon="🍽️" label="Ate"/>
+            <Check field="water"  icon="💧" label="Water"/>
+            <Check field="litter" icon="🪣" label="Litter"/>
+            <Check field="med"    icon="💊" label="Med"/>
           </div>
 
-          <div className="flex rounded-xl overflow-hidden border border-slate-200">
-            <button onClick={() => setShowArchived(false)}
-              className={`flex-1 py-2 text-xs font-bold ${!showArchived ? "bg-slate-900 text-white" : "bg-white text-slate-500"}`}>
-              Active ({activeCats.length})
-            </button>
-            <button onClick={() => setShowArchived(true)}
-              className={`flex-1 py-2 text-xs font-bold ${showArchived ? "bg-slate-900 text-white" : "bg-white text-slate-500"}`}>
-              Archived ({archivedCats.length})
-            </button>
-          </div>
-
-          {shownCats.length === 0
-            ? <Empty icon="🐱" title={showArchived ? "No archived cats" : "No cats added yet"} subtitle={showArchived ? "" : "Tap Add Cat to get started."} />
-            : shownCats.map(cat => (
-              <div key={cat.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1 min-w-0">
-                    <div className="font-semibold text-slate-800">{cat.name}</div>
-                    <div className="text-sm text-slate-400 mt-0.5">{getLocName(cat.locationId)}{cat.cageNumber ? ` · Cage ${cat.cageNumber}` : ""}</div>
-                    <div className="flex flex-wrap gap-1.5 mt-2">
-                      <span className={`text-xs px-2.5 py-0.5 rounded-full font-medium capitalize ${statusColor[cat.status] ?? "bg-slate-100 text-slate-600"}`}>{cat.status}</span>
-                      {(cat.medications || []).length > 0 && (
-                        <span className="text-xs bg-rose-50 text-rose-600 border border-rose-100 px-2.5 py-0.5 rounded-full font-medium">
-                          💊 {cat.medications.length} med{cat.medications.length > 1 ? "s" : ""}
-                        </span>
-                      )}
-                    </div>
-                    {cat.notes && <p className="text-xs text-slate-400 mt-2 italic leading-relaxed">{cat.notes}</p>}
-                  </div>
-                  <div className="flex flex-col items-end gap-1.5 ml-3 flex-shrink-0">
-                    <button onClick={() => openEdit(cat)} className="text-xs text-teal-600 font-medium">Edit</button>
-                    <button onClick={() => archiveCat(cat)} className="text-xs text-slate-400">{showArchived ? "Unarchive" : "Archive"}</button>
-                    <button onClick={() => deleteCat(cat)} className="text-xs text-red-400">Delete</button>
-                  </div>
-                </div>
-              </div>
-            ))
-          }
-        </div>
-      );
-    }
-
-    // ──────────────────────────────────────────────────────────────
-    // LOCATIONS TAB
-    // ──────────────────────────────────────────────────────────────
-    function LocationsTab({ data, save }) {
-      const [mode,    setMode   ] = useState("list");
-      const [editing, setEditing] = useState(null);
-      const [form,    setForm   ] = useState({});
-
-      const openNew  = () => { setForm({ name: "", type: "apartment", description: "" }); setEditing("new"); setMode("form"); };
-      const openEdit = (l) => { setForm({ ...l }); setEditing(l); setMode("form"); };
-      const close    = () => { setMode("list"); setEditing(null); setForm({}); };
-      const setF     = (k, v) => setForm(p => ({ ...p, [k]: v }));
-
-      const handleSave = async () => {
-        if (!form.name?.trim()) return;
-        const locs = editing === "new"
-          ? [...data.locations, { ...form, id: uid() }]
-          : data.locations.map(l => l.id === editing.id ? { ...form, id: l.id } : l);
-        await save("locations", locs);
-        close();
-      };
-
-      const deleteLoc = async (loc) => {
-        if (!window.confirm(`Delete "${loc.name}"?`)) return;
-        await save("locations", data.locations.filter(l => l.id !== loc.id));
-      };
-
-      if (mode === "form") {
-        return (
-          <div className="p-4 space-y-4">
-            <BackBar onBack={close} title={editing === "new" ? "Add Location" : "Edit Location"} />
-            <Card>
-              <div className="space-y-3">
-                <Field label="Name *" value={form.name || ""} onChange={v => setF("name", v)} placeholder="e.g. Apartment 3" />
-                <div>
-                  <Label>Type</Label>
-                  <select value={form.type || "apartment"} onChange={e => setF("type", e.target.value)} className={inputCls}>
-                    <option value="apartment">Apartment</option>
-                    <option value="catio">Catio</option>
-                    <option value="other">Other</option>
-                  </select>
-                </div>
-                <Field label="Description (optional)" value={form.description || ""} onChange={v => setF("description", v)} placeholder="Notes about this location" multiline />
-              </div>
-            </Card>
-            <button onClick={handleSave} className="w-full bg-slate-900 text-white font-semibold py-4 rounded-2xl text-sm">Save Location</button>
-          </div>
-        );
-      }
-
-      const typeIcon = t => t === "apartment" ? "🏠" : t === "catio" ? "🌿" : "📍";
-
-      return (
-        <div className="p-4 space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-base font-bold text-slate-800">Locations ({data.locations.length})</h2>
-            <button onClick={openNew} className="bg-slate-900 text-white text-xs px-4 py-2 rounded-xl font-medium">+ Add</button>
-          </div>
-          {data.locations.length === 0
-            ? <Empty icon="🏠" title="No locations yet" subtitle="Add apartments and catios here." />
-            : data.locations.map(loc => {
-              const catCount = data.cats.filter(c => c.locationId === loc.id && c.active !== false).length;
-              return (
-                <div key={loc.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <div className="font-semibold text-slate-800">{typeIcon(loc.type)} {loc.name}</div>
-                      <div className="text-sm text-slate-400 mt-0.5 capitalize">{loc.type} · {catCount} cat{catCount !== 1 ? "s" : ""}</div>
-                      {loc.description && <p className="text-xs text-slate-400 mt-1.5 italic">{loc.description}</p>}
-                    </div>
-                    <div className="flex flex-col items-end gap-1.5 ml-3 flex-shrink-0">
-                      <button onClick={() => openEdit(loc)} className="text-xs text-teal-600 font-medium">Edit</button>
-                      <button onClick={() => deleteLoc(loc)} className="text-xs text-slate-400">Delete</button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })
-          }
-        </div>
-      );
-    }
-
-    // ──────────────────────────────────────────────────────────────
-    // PEOPLE TAB  (UID-indexed, roles, archive vs delete)
-    // ──────────────────────────────────────────────────────────────
-    function PeopleTab({ data, save, currentUid }) {
-      const [mode,    setMode   ] = useState("list");
-      const [editing, setEditing] = useState(null);
-      const [form,    setForm   ] = useState({});
-      const [err,     setErr    ] = useState("");
-      const [showArchived, setShowArchived] = useState(false);
-
-      // Convert object to array for display
-      const peopleArray = Object.values(data.people || {});
-      const activePeople   = peopleArray.filter(p => p.active !== false);
-      const archivedPeople = peopleArray.filter(p => p.active === false);
-      const shownPeople    = showArchived ? archivedPeople : activePeople;
-
-      const openNew  = () => { setForm({ name: "", uid: "", email: "", role: "volunteer", active: true }); setEditing("new"); setMode("form"); setErr(""); };
-      const openEdit = (p) => { setForm({ ...p }); setEditing(p); setMode("form"); setErr(""); };
-      const close    = () => { setMode("list"); setEditing(null); setForm({}); setErr(""); };
-      const setF     = (k, v) => setForm(p => ({ ...p, [k]: v }));
-
-      const handleSave = async () => {
-        if (!form.name?.trim()) { setErr("Name is required."); return; }
-        if (!form.uid?.trim())  { setErr("Firebase UID is required."); return; }
-        if (!form.email?.trim()){ setErr("Email is required."); return; }
-        if (data.people[form.uid] && editing === "new") {
-          setErr("That UID already exists in People."); return;
-        }
-        const updated = { ...data.people, [form.uid]: { ...form, uid: form.uid } };
-        await save("people", updated);
-        close();
-      };
-
-      const archivePerson = async (p) => {
-        const updated = { ...data.people, [p.uid]: { ...p, active: !p.active } };
-        await save("people", updated);
-      };
-
-      const deletePerson = async (p) => {
-        if (p.protected) { alert("This account is protected and cannot be removed from here."); return; }
-        if (!window.confirm(`Permanently remove ${p.name}? This removes their access to this app. Their Firebase login still exists.`)) return;
-        const updated = { ...data.people };
-        delete updated[p.uid];
-        await save("people", updated);
-      };
-
-      if (mode === "form") {
-        return (
-          <div className="p-4 space-y-4">
-            <BackBar onBack={close} title={editing === "new" ? "Add Person" : "Edit Person"} />
-            <Card>
-              <div className="space-y-3">
-                <Field label="Full Name *" value={form.name || ""} onChange={v => setF("name", v)} placeholder="e.g. Maria González" />
-                <Field label="Email *" value={form.email || ""} onChange={v => setF("email", v)} placeholder="maria@email.com" type="email" />
-                {editing === "new" && (
-                  <div>
-                    <Field label="Firebase UID *" value={form.uid || ""} onChange={v => setF("uid", v)} placeholder="Found in Firebase Authentication" />
-                    <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-                      Go to Firebase Console → Authentication → Users → copy the UID of this person.
-                    </p>
-                  </div>
-                )}
-                <div>
-                  <Label>Role</Label>
-                  <select value={form.role || "volunteer"} onChange={e => setF("role", e.target.value)} className={inputCls}>
-                    <option value="volunteer">Volunteer</option>
-                    <option value="coordinator">Coordinator</option>
-                  </select>
-                </div>
-                {err && <div className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-xl">{err}</div>}
-              </div>
-            </Card>
-            <button onClick={handleSave} className="w-full bg-slate-900 text-white font-semibold py-4 rounded-2xl text-sm">Save Person</button>
-          </div>
-        );
-      }
-
-      return (
-        <div className="p-4 space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-base font-bold text-slate-800">People ({shownPeople.length})</h2>
-            <button onClick={openNew} className="bg-slate-900 text-white text-xs px-4 py-2 rounded-xl font-medium">+ Add</button>
-          </div>
-
-          <div className="flex rounded-xl overflow-hidden border border-slate-200">
-            <button onClick={() => setShowArchived(false)}
-              className={`flex-1 py-2 text-xs font-bold ${!showArchived ? "bg-slate-900 text-white" : "bg-white text-slate-500"}`}>
-              Active ({activePeople.length})
-            </button>
-            <button onClick={() => setShowArchived(true)}
-              className={`flex-1 py-2 text-xs font-bold ${showArchived ? "bg-slate-900 text-white" : "bg-white text-slate-500"}`}>
-              Archived ({archivedPeople.length})
-            </button>
-          </div>
-
-          {shownPeople.length === 0
-            ? <Empty icon="👤" title={showArchived ? "No archived people" : "No people yet"} subtitle={showArchived ? "" : "Add coordinators and volunteers here."} />
-            : shownPeople.map(p => {
-              const isMe = p.uid === currentUid;
-              return (
-                <div key={p.uid} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="min-w-0">
-                      <div className="font-semibold text-slate-800 flex items-center gap-1.5">
-                        {p.name}
-                        {isMe && <span className="text-xs text-teal-600 font-normal">(you)</span>}
-                        {p.protected && <span className="text-xs text-amber-600 font-normal">🔒</span>}
-                      </div>
-                      <div className="text-sm text-slate-400 mt-0.5 truncate">{p.email}</div>
-                      <span className={`inline-block mt-1.5 text-xs px-2.5 py-0.5 rounded-full font-medium capitalize ${p.role === "coordinator" ? "bg-indigo-100 text-indigo-700" : "bg-slate-100 text-slate-600"}`}>
-                        {p.role}
-                      </span>
-                    </div>
-                    <div className="flex flex-col items-end gap-1.5 ml-3 flex-shrink-0">
-                      <button onClick={() => openEdit(p)} className="text-xs text-teal-600 font-medium">Edit</button>
-                      {!p.protected && <button onClick={() => archivePerson(p)} className="text-xs text-slate-400">{showArchived ? "Unarchive" : "Archive"}</button>}
-                      {!p.protected && <button onClick={() => deletePerson(p)} className="text-xs text-red-400">Delete</button>}
-                    </div>
-                  </div>
-                </div>
-              );
-            })
-          }
-        </div>
-      );
-    }
-
-    // ──────────────────────────────────────────────────────────────
-    // HISTORY TAB  (with print)
-    // ──────────────────────────────────────────────────────────────
-    function HistoryTab({ data }) {
-      const [date, setDate] = useState(todayISO());
-      const asgns = data.assignments
-        .filter(a => a.date === date)
-        .sort((a, b) => a.shift.localeCompare(b.shift));
-      const getPersonName = id => Object.values(data.people || {}).find(p => p.uid === id || p.id === id)?.name ?? "Unknown";
-
-      const doPrint = () => printAssignments({
-        title: "Zaenid Michis — Task History",
-        subtitle: fmtDate(date),
-        assignments: asgns,
-        getPersonName,
-      });
-
-      return (
-        <div className="p-4 space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-base font-bold text-slate-800">History</h2>
-            <input type="date" value={date} onChange={e => setDate(e.target.value)}
-              className="border border-slate-200 rounded-xl px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 bg-white" />
-          </div>
-
-          {asgns.length > 0 && (
-            <div className="flex justify-end">
-              <PrintButton label="🖨️ Print this day" onPrint={doPrint} />
+          {/* Notes */}
+          <div className="space-y-3">
+            <div>
+              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">📝 Care notes</label>
+              <textarea value={careNotes} onChange={e=>setCareNotes(e.target.value)} onBlur={saveNotes} rows={2} placeholder="Behavior, eating habits, etc." className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"/>
             </div>
-          )}
-
-          {asgns.length === 0
-            ? <Empty icon="📅" title="No assignments found" subtitle={`Nothing recorded for ${fmtDate(date)}.`} />
-            : asgns.map(a => {
-              const done = a.tasks.filter(t => t.completedAt).length;
-              const pct  = a.tasks.length ? Math.round(done / a.tasks.length * 100) : 0;
-              const isAM = a.shift === "AM";
-              return (
-                <div key={a.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-                  <div className={`px-4 py-3 flex items-center justify-between ${isAM ? "bg-amber-50 border-b border-amber-100" : "bg-indigo-50 border-b border-indigo-100"}`}>
-                    <div className="flex items-center gap-2">
-                      <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${isAM ? "bg-amber-500 text-white" : "bg-indigo-600 text-white"}`}>{a.shift}</span>
-                      <span className="font-semibold text-slate-800 text-sm">{getPersonName(a.personId)}</span>
-                    </div>
-                    <span className={`text-sm font-bold ${pct === 100 ? "text-emerald-600" : "text-slate-500"}`}>{done}/{a.tasks.length} done</span>
-                  </div>
-                  <div className="h-1 bg-slate-100">
-                    <div className={`h-full ${pct === 100 ? "bg-emerald-500" : isAM ? "bg-amber-400" : "bg-indigo-500"}`} style={{ width: `${pct}%` }} />
-                  </div>
-                  <div className="px-4 py-3 space-y-1.5">
-                    {a.tasks.map(t => (
-                      <div key={t.id} className="flex items-center gap-2 text-sm">
-                        <span className={t.completedAt ? "text-emerald-500" : "text-slate-300"}>{t.completedAt ? "✓" : "○"}</span>
-                        <span className={`flex-1 ${t.completedAt ? "line-through text-slate-400" : "text-slate-700"}`}>
-                          {t.catName && <span className="font-semibold text-slate-500">[{t.catName}] </span>}{t.name}
-                        </span>
-                        {t.completedAt && <span className="text-slate-300 text-xs flex-shrink-0">{fmtTime(t.completedAt)}</span>}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              );
-            })
-          }
-        </div>
-      );
-    }
-
-    // ──────────────────────────────────────────────────────────────
-    // SETTINGS TAB  (change password, danger zone)
-    // ──────────────────────────────────────────────────────────────
-    function SettingsTab({ data, save, authUser }) {
-      const [newPass, setNewPass] = useState("");
-      const [confirm, setConfirm] = useState("");
-      const [msg,     setMsg    ] = useState(null);
-      const [busy,    setBusy   ] = useState(false);
-      const [confirmText, setConfirmText] = useState("");
-      const [dangerMsg, setDangerMsg] = useState(null);
-
-      const changePassword = async () => {
-        setMsg(null);
-        if (newPass.length < 6) { setMsg({ ok: false, text: "Password must be at least 6 characters." }); return; }
-        if (newPass !== confirm) { setMsg({ ok: false, text: "Passwords do not match." }); return; }
-        setBusy(true);
-        try {
-          await authUser.updatePassword(newPass);
-          setNewPass(""); setConfirm("");
-          setMsg({ ok: true, text: "Password updated successfully!" });
-        } catch (e) {
-          if (e.code === "auth/requires-recent-login") {
-            try {
-              await firebaseAuth.sendPasswordResetEmail(authUser.email);
-              setMsg({ ok: true, text: "For security, please use the password reset email we just sent you instead." });
-            } catch {
-              setMsg({ ok: false, text: "Couldn't update password. Please sign out and sign back in, then try again." });
-            }
-          } else {
-            setMsg({ ok: false, text: "Couldn't update password. Try again." });
-          }
-        }
-        setBusy(false);
-      };
-
-      const wipeAllAssignments = async () => {
-        if (confirmText !== "DELETE") { setDangerMsg("Type DELETE in the box to confirm."); return; }
-        await save("assignments", []);
-        setConfirmText("");
-        setDangerMsg("✅ All assignment history has been deleted.");
-      };
-
-      return (
-        <div className="p-4 space-y-4">
-          <h2 className="text-base font-bold text-slate-800">Settings</h2>
-
-          <Card title="🔐 Change My Password">
-            <div className="space-y-3">
-              <Field label="New password (min. 6 characters)" value={newPass} onChange={setNewPass} type="password" placeholder="New password" />
-              <Field label="Confirm new password" value={confirm} onChange={setConfirm} type="password" placeholder="Repeat to confirm" />
-              {msg && (
-                <div className={`text-sm px-3 py-2 rounded-xl ${msg.ok ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-600"}`}>{msg.text}</div>
-              )}
-              <button onClick={changePassword} disabled={busy}
-                className="w-full bg-slate-900 text-white font-semibold py-3 rounded-xl text-sm disabled:opacity-50">
-                {busy ? "Updating…" : "Update Password"}
-              </button>
+            <div>
+              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">🏥 Medical observations</label>
+              <textarea value={medNotes} onChange={e=>setMedNotes(e.target.value)} onBlur={saveNotes} rows={2} placeholder="Health concerns, symptoms, etc." className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"/>
             </div>
-          </Card>
-
-          <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4 text-sm text-amber-800 leading-relaxed">
-            <strong>💡 Adding new people:</strong> Create their login in the Firebase console first with a temporary password, then add them in the People tab using the exact same email. They can change their password here once they sign in.
           </div>
 
-          <Card title="⚠️ Danger Zone">
-            <p className="text-sm text-slate-500 mb-3">
-              This permanently deletes <strong>all</strong> assignment history (every day, every volunteer). Cats, locations, and people are not affected. This cannot be undone.
-            </p>
-            <Field label='Type "DELETE" to confirm' value={confirmText} onChange={setConfirmText} placeholder="DELETE" />
-            {dangerMsg && <p className="text-sm text-red-600 mt-2">{dangerMsg}</p>}
-            <button onClick={wipeAllAssignments}
-              className="w-full bg-red-50 text-red-600 border border-red-200 font-semibold py-3 rounded-xl text-sm mt-3">
-              Delete All Assignment History
-            </button>
-          </Card>
+          {record.updatedBy&&<p className="text-xs text-slate-400 mt-3 text-center">Last updated by <strong>{record.updatedBy}</strong>{record.updatedAt?" at "+fmtTime(record.updatedAt):""}</p>}
+          <div className="h-6"/>
         </div>
-      );
-    }
+      </div>
+    </div>);
+  }
 
-    // ──────────────────────────────────────────────────────────────
-    // VOLUNTEER APP
-    // ──────────────────────────────────────────────────────────────
-    function VolunteerApp({ authUser, person, data, save, onLogout }) {
-      const [showSettings, setShowSettings] = useState(false);
-      const tday = todayISO();
-      const myAsgns = data.assignments
-        .filter(a => a.date === tday && a.personId === person.uid)
-        .sort((a, b) => a.shift.localeCompare(b.shift));
+  // ── TASKS TAB (special tasks) ───────────────────────────────────
+  function TasksTab({data,save,person}){
+    const [form,setForm]=useState(null);
+    const [newType,setNewType]=useState("");
+    const [newPerson,setNewPerson]=useState("");
+    const [newNote,setNewNote]=useState("");
+    const [flash,setFlash]=useState(null);
+    const today=todayISO();
 
-      const markTask = async (aId, tId) => {
-        const now = new Date().toISOString();
-        const updated = data.assignments.map(a => {
-          if (a.id !== aId) return a;
-          return { ...a, tasks: a.tasks.map(t => t.id !== tId ? t : { ...t, completedAt: t.completedAt ? null : now }) };
-        });
-        await save("assignments", updated);
-      };
+    const activePeople=Object.values(data.people||{}).filter(p=>p.active!==false);
+    const todayTasks=data.tasks.filter(t=>t.date===today);
 
-      const groupByCat = (tasks) => {
-        const catMap = {};
-        const other  = [];
-        tasks.forEach(t => {
-          if (t.catId) {
-            if (!catMap[t.catId]) catMap[t.catId] = { catName: t.catName, locName: t.locationName, tasks: [] };
-            catMap[t.catId].tasks.push(t);
-          } else {
-            other.push(t);
-          }
-        });
-        return { catGroups: Object.values(catMap), other };
-      };
+    const addTask=async()=>{
+      if(!newType||!newPerson){setFlash({ok:false,msg:"Select task type and volunteer."});return;}
+      const p=activePeople.find(x=>x.uid===newPerson);
+      const task={id:uid(),date:today,type:newType,personId:newPerson,personName:p?.name||"",note:newNote,done:false,createdAt:new Date().toISOString()};
+      await save("tasks",[...data.tasks,task]);
+      setNewType("");setNewPerson("");setNewNote("");
+      setFlash({ok:true,msg:"Task assigned!"});
+      setTimeout(()=>setFlash(null),2000);
+    };
 
-      if (showSettings) {
-        return <VolunteerSettings authUser={authUser} onBack={() => setShowSettings(false)} onLogout={onLogout} />;
-      }
+    const toggleDone=async(id)=>{
+      await save("tasks",data.tasks.map(t=>t.id===id?{...t,done:!t.done}:t));
+    };
 
-      return (
-        <div className="min-h-screen bg-slate-50 flex flex-col">
-          <header className="bg-slate-900 text-white px-4 py-3 flex items-center justify-between sticky top-0 z-10">
-            <div className="flex items-center gap-2">
-              <span className="text-xl">🐾</span>
-              <div>
-                <div className="font-bold text-sm leading-tight">Zaenid Michis</div>
-                <div className="text-slate-400 text-xs">Hi, {person.name}!</div>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <button onClick={() => setShowSettings(true)} className="text-slate-400 text-xs border border-slate-600 px-3 py-1.5 rounded-lg">⚙️</button>
-              <button onClick={onLogout} className="text-slate-400 text-xs border border-slate-600 px-3 py-1.5 rounded-lg">Sign out</button>
-            </div>
-          </header>
+    const deleteTask=async(id)=>{
+      await save("tasks",data.tasks.filter(t=>t.id!==id));
+    };
 
-          <main className="flex-1 p-4 space-y-4">
-            <h2 className="text-base font-bold text-slate-800">{fmtDate(tday)}</h2>
+    return(<div className="p-4 space-y-4">
+      <h2 className="text-base font-bold text-slate-800">Special Tasks — Today</h2>
+      {flash&&<div className={`text-sm px-4 py-3 rounded-xl font-medium ${flash.ok?"bg-emerald-100 text-emerald-700":"bg-red-100 text-red-600"}`}>{flash.msg}</div>}
 
-            {myAsgns.length === 0 ? (
-              <div className="text-center py-16">
-                <div className="text-6xl mb-4">😺</div>
-                <p className="font-semibold text-slate-700">No tasks assigned for today.</p>
-                <p className="text-sm text-slate-400 mt-1">Check back later or contact the coordinator.</p>
-              </div>
-            ) : (
-              myAsgns.map(a => {
-                const { catGroups, other } = groupByCat(a.tasks);
-                const done  = a.tasks.filter(t => t.completedAt).length;
-                const total = a.tasks.length;
-                const pct   = total ? Math.round(done / total * 100) : 0;
-                const isAM  = a.shift === "AM";
-
-                return (
-                  <div key={a.id} className={`rounded-2xl border-2 overflow-hidden ${isAM ? "border-amber-200" : "border-indigo-200"}`}>
-                    <div className={`px-4 py-3 ${isAM ? "bg-amber-500" : "bg-indigo-600"}`}>
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-white font-bold">{isAM ? "☀️ Morning Shift" : "🌙 Afternoon Shift"}</span>
-                        <span className="text-white text-sm font-semibold opacity-90">{done}/{total}</span>
-                      </div>
-                      <div className="bg-black bg-opacity-20 rounded-full h-2">
-                        <div className="h-2 bg-white rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
-                      </div>
-                    </div>
-
-                    {pct === 100 && (
-                      <div className="bg-emerald-500 text-white text-sm font-semibold text-center py-2">
-                        🎉 Shift complete — great work!
-                      </div>
-                    )}
-
-                    <div className="bg-white">
-                      {catGroups.map(group => (
-                        <div key={group.catName}>
-                          <div className={`px-4 py-2 flex items-center gap-2 border-b border-slate-100 ${isAM ? "bg-amber-50" : "bg-indigo-50"}`}>
-                            <span>🐱</span>
-                            <span className="font-semibold text-slate-800 text-sm">{group.catName}</span>
-                            {group.locName && <span className="text-xs text-slate-400">{group.locName}</span>}
-                          </div>
-                          <div className="divide-y divide-slate-100">
-                            {group.tasks.map(t => <TaskRow key={t.id} task={t} onToggle={() => markTask(a.id, t.id)} />)}
-                          </div>
-                        </div>
-                      ))}
-
-                      {other.length > 0 && (
-                        <div>
-                          <div className="px-4 py-2 bg-slate-50 border-y border-slate-100 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                            Other Tasks
-                          </div>
-                          <div className="divide-y divide-slate-100">
-                            {other.map(t => <TaskRow key={t.id} task={t} onToggle={() => markTask(a.id, t.id)} />)}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </main>
-        </div>
-      );
-    }
-
-    function VolunteerSettings({ authUser, onBack, onLogout }) {
-      const [newPass, setNewPass] = useState("");
-      const [confirm, setConfirm] = useState("");
-      const [msg,     setMsg    ] = useState(null);
-      const [busy,    setBusy   ] = useState(false);
-
-      const changePassword = async () => {
-        setMsg(null);
-        if (newPass.length < 6) { setMsg({ ok: false, text: "Password must be at least 6 characters." }); return; }
-        if (newPass !== confirm) { setMsg({ ok: false, text: "Passwords do not match." }); return; }
-        setBusy(true);
-        try {
-          await authUser.updatePassword(newPass);
-          setNewPass(""); setConfirm("");
-          setMsg({ ok: true, text: "Password updated successfully!" });
-        } catch (e) {
-          if (e.code === "auth/requires-recent-login") {
-            try {
-              await firebaseAuth.sendPasswordResetEmail(authUser.email);
-              setMsg({ ok: true, text: "For security, please use the password reset email we just sent you instead." });
-            } catch {
-              setMsg({ ok: false, text: "Couldn't update password. Sign out, sign back in, then try again." });
-            }
-          } else {
-            setMsg({ ok: false, text: "Couldn't update password. Try again." });
-          }
-        }
-        setBusy(false);
-      };
-
-      return (
-        <div className="min-h-screen bg-slate-50 flex flex-col">
-          <header className="bg-slate-900 text-white px-4 py-3 flex items-center gap-3 sticky top-0 z-10">
-            <button onClick={onBack} className="text-slate-300 text-sm">← Back</button>
-            <span className="font-bold text-sm">My Settings</span>
-          </header>
-          <main className="flex-1 p-4">
-            <Card title="🔐 Change My Password">
-              <div className="space-y-3">
-                <Field label="New password (min. 6 characters)" value={newPass} onChange={setNewPass} type="password" placeholder="New password" />
-                <Field label="Confirm new password" value={confirm} onChange={setConfirm} type="password" placeholder="Repeat to confirm" />
-                {msg && (
-                  <div className={`text-sm px-3 py-2 rounded-xl ${msg.ok ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-600"}`}>{msg.text}</div>
-                )}
-                <button onClick={changePassword} disabled={busy}
-                  className="w-full bg-slate-900 text-white font-semibold py-3 rounded-xl text-sm disabled:opacity-50">
-                  {busy ? "Updating…" : "Update Password"}
-                </button>
-              </div>
-            </Card>
-            <button onClick={onLogout} className="w-full mt-4 text-slate-500 text-sm font-medium py-2">Sign out</button>
-          </main>
-        </div>
-      );
-    }
-
-    // ──────────────────────────────────────────────────────────────
-    // TASK ROW
-    // ──────────────────────────────────────────────────────────────
-    function TaskRow({ task, onToggle }) {
-      const icon = task.type === "medication" ? "💊" : task.type === "location" ? "🏠" : task.type === "special" ? "⭐" : null;
-      return (
-        <div onClick={onToggle}
-          className={`flex items-center gap-3 px-4 py-3.5 cursor-pointer select-none transition-colors ${task.completedAt ? "bg-emerald-50" : "active:bg-slate-50"}`}>
-          <div className={`w-7 h-7 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all duration-200 ${
-            task.completedAt ? "bg-emerald-500 border-emerald-500" : "border-slate-300"
-          }`}>
-            {task.completedAt && <span className="text-white text-xs font-bold">✓</span>}
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className={`text-sm leading-snug ${task.completedAt ? "line-through text-slate-400" : "text-slate-800"}`}>
-              {icon && <span className="mr-1">{icon}</span>}{task.name}
-            </div>
-            {task.completedAt && (
-              <div className="text-xs text-slate-400 mt-0.5">Done at {fmtTime(task.completedAt)}</div>
-            )}
-          </div>
-        </div>
-      );
-    }
-
-    // ──────────────────────────────────────────────────────────────
-    // SHARED PRIMITIVES
-    // ──────────────────────────────────────────────────────────────
-    const inputCls = "w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 bg-white";
-
-    function Label({ children }) {
-      return <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">{children}</label>;
-    }
-
-    function Field({ label, value, onChange, placeholder = "", type = "text", multiline = false }) {
-      return (
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 space-y-3">
+        <h3 className="font-semibold text-slate-700 text-sm">Assign a special task</h3>
         <div>
-          <Label>{label}</Label>
-          {multiline
-            ? <textarea value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} rows={3} className={inputCls} />
-            : <input type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} className={inputCls} />
-          }
+          <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Task Type</label>
+          <select value={newType} onChange={e=>setNewType(e.target.value)} className={IC}>
+            <option value="">— Select —</option>
+            {SPECIAL_TASKS.map(t=><option key={t} value={t}>{t}</option>)}
+          </select>
         </div>
-      );
-    }
-
-    function Card({ title, children }) {
-      return (
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
-          {title && <h3 className="font-semibold text-slate-700 text-sm mb-3">{title}</h3>}
-          {children}
+        <div>
+          <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Assign to</label>
+          <select value={newPerson} onChange={e=>setNewPerson(e.target.value)} className={IC}>
+            <option value="">— Select volunteer —</option>
+            {activePeople.map(p=><option key={p.uid} value={p.uid}>{p.name}</option>)}
+          </select>
         </div>
-      );
-    }
-
-    function BackBar({ onBack, title }) {
-      return (
-        <div className="flex items-center gap-3 mb-2">
-          <button onClick={onBack} className="text-teal-600 text-sm font-medium">← Back</button>
-          <h2 className="text-base font-bold text-slate-800">{title}</h2>
+        <div>
+          <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Notes (optional)</label>
+          <input value={newNote} onChange={e=>setNewNote(e.target.value)} placeholder="Additional details…" className={IC}/>
         </div>
-      );
-    }
+        <button onClick={addTask} className="w-full bg-slate-900 text-white font-semibold py-3 rounded-xl text-sm">Assign Task</button>
+      </div>
 
-    function Empty({ icon, title, subtitle }) {
-      return (
-        <div className="text-center py-14">
-          <div className="text-5xl mb-3">{icon}</div>
-          <p className="font-semibold text-slate-700">{title}</p>
-          {subtitle && <p className="text-sm text-slate-400 mt-1">{subtitle}</p>}
+      {todayTasks.length===0?<Empty icon="📋" title="No special tasks today" subtitle="Assign tasks above."/>
+      :<div className="space-y-2">{todayTasks.map(t=>(
+        <div key={t.id} className={`bg-white rounded-2xl border shadow-sm p-4 ${t.done?"border-emerald-200 bg-emerald-50 opacity-70":"border-slate-100"}`}>
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <p className={`font-semibold text-sm ${t.done?"line-through text-slate-400":"text-slate-800"}`}>{t.type}</p>
+              <p className="text-xs text-slate-500 mt-0.5">→ {t.personName}</p>
+              {t.note&&<p className="text-xs text-slate-400 mt-1 italic">{t.note}</p>}
+            </div>
+            <div className="flex items-center gap-2 ml-3">
+              <button onClick={()=>toggleDone(t.id)} className={`text-xs px-2.5 py-1 rounded-full font-bold ${t.done?"bg-emerald-500 text-white":"bg-slate-100 text-slate-600"}`}>{t.done?"✓ Done":"Mark done"}</button>
+              <button onClick={()=>deleteTask(t.id)} className="text-red-300 text-lg font-bold">×</button>
+            </div>
+          </div>
         </div>
-      );
-    }
+      ))}</div>}
+    </div>);
+  }
 
-    // ──────────────────────────────────────────────────────────────
-    // RENDER
-    // ──────────────────────────────────────────────────────────────
-    const root = ReactDOM.createRoot(document.getElementById("root"));
-    root.render(<App />);
-  </script>
+  // ── CATS PHOTO TAB ──────────────────────────────────────────────
+  function CatsPhotoTab({data,save}){
+    const [search,setSearch]=useState("");
+    const [editing,setEditing]=useState(null);
+    const [url,setUrl]=useState("");
+
+    const filtered=CATS.filter(c=>!search||c.name.toLowerCase().includes(search.toLowerCase())||String(c.n).includes(search));
+
+    const savePhoto=async()=>{
+      const updated={...data.catPhotos,[editing.id]:url.trim()};
+      await save("catPhotos",updated);
+      setEditing(null);setUrl("");
+    };
+
+    const removePhoto=async(catId)=>{
+      const updated={...data.catPhotos};delete updated[catId];
+      await save("catPhotos",updated);
+    };
+
+    return(<div className="p-4 space-y-4">
+      <h2 className="text-base font-bold text-slate-800">Cat Photos ({CATS.length} cats)</h2>
+      <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="🔍 Search cat…" className={IC}/>
+      <div className="space-y-2">
+        {filtered.map(cat=>{
+          const photo=data.catPhotos?.[cat.id];
+          return(<div key={cat.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-3 flex items-center gap-3">
+            {photo?<img src={photo} alt={cat.name} className="w-12 h-12 rounded-xl object-cover flex-shrink-0"/>:<div className="w-12 h-12 rounded-xl bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-500 flex-shrink-0">#{cat.n}</div>}
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-sm text-slate-800">{cat.name}</p>
+              <p className="text-xs text-slate-400">{photo?"Photo added":"No photo yet"}</p>
+            </div>
+            <div className="flex gap-2">
+              <button onClick={()=>{setEditing(cat);setUrl(photo||"");}} className="text-xs text-teal-600 font-medium">{photo?"Edit":"Add"}</button>
+              {photo&&<button onClick={()=>removePhoto(cat.id)} className="text-xs text-red-400">Remove</button>}
+            </div>
+          </div>);
+        })}
+      </div>
+
+      {editing&&(<div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-end" onClick={()=>setEditing(null)}>
+        <div className="bg-white w-full rounded-t-3xl p-5" onClick={e=>e.stopPropagation()}>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-black text-slate-800">Photo — {editing.name}</h3>
+            <button onClick={()=>setEditing(null)} className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold">×</button>
+          </div>
+          <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Photo URL</label>
+          <input value={url} onChange={e=>setUrl(e.target.value)} placeholder="https://photos.google.com/…" className={`${IC} mb-2`}/>
+          <p className="text-xs text-slate-400 mb-4">Paste the URL from Google Photos, Google Drive, Imgur, or any image hosting service.</p>
+          {url&&<img src={url} alt="preview" className="w-full h-40 object-cover rounded-xl mb-4" onError={e=>e.target.style.display="none"}/>}
+          <button onClick={savePhoto} className="w-full bg-slate-900 text-white font-semibold py-3 rounded-xl text-sm">Save Photo</button>
+        </div>
+      </div>)}
+    </div>);
+  }
+
+  // ── PEOPLE TAB ──────────────────────────────────────────────────
+  function PeopleTab({data,save,currentUid}){
+    const [mode,setMode]=useState("list");const [editing,setEditing]=useState(null);
+    const [form,setForm]=useState({});const [err,setErr]=useState("");const [showArchived,setShowArchived]=useState(false);
+    const peopleArr=Object.values(data.people||{});
+    const activePeople=peopleArr.filter(p=>p.active!==false);
+    const archivedPeople=peopleArr.filter(p=>p.active===false);
+    const shown=showArchived?archivedPeople:activePeople;
+    const openNew=()=>{setForm({name:"",uid:"",email:"",role:"volunteer",active:true});setEditing("new");setMode("form");setErr("");};
+    const openEdit=p=>{setForm({...p});setEditing(p);setMode("form");setErr("");};
+    const close=()=>{setMode("list");setEditing(null);setForm({});setErr("");};
+    const setF=(k,v)=>setForm(p=>({...p,[k]:v}));
+    const handleSave=async()=>{
+      if(!form.name?.trim()){setErr("Name is required.");return;}
+      if(!form.uid?.trim()){setErr("Firebase UID is required.");return;}
+      if(!form.email?.trim()){setErr("Email is required.");return;}
+      if(editing==="new"&&data.people[form.uid]){setErr("That UID already exists.");return;}
+      const updated={...data.people,[form.uid]:{...form}};
+      await save("people",updated);close();
+    };
+    const archivePerson=async p=>{const u={...data.people,[p.uid]:{...p,active:!p.active}};await save("people",u);};
+    const deletePerson=async p=>{
+      if(p.protected){alert("This account is protected and cannot be removed here.");return;}
+      if(!window.confirm(`Remove ${p.name}? Their Firebase login still exists.`))return;
+      const u={...data.people};delete u[p.uid];await save("people",u);
+    };
+    if(mode==="form")return(<div className="p-4 space-y-4">
+      <div className="flex items-center gap-3 mb-2"><button onClick={close} className="text-teal-600 text-sm font-medium">← Back</button><h2 className="text-base font-bold text-slate-800">{editing==="new"?"Add Person":"Edit Person"}</h2></div>
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 space-y-3">
+        <div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Full Name *</label><input value={form.name||""} onChange={e=>setF("name",e.target.value)} className={IC} placeholder="Maria González"/></div>
+        <div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Email *</label><input type="email" value={form.email||""} onChange={e=>setF("email",e.target.value)} className={IC} placeholder="maria@email.com"/></div>
+        {editing==="new"&&<div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Firebase UID *</label><input value={form.uid||""} onChange={e=>setF("uid",e.target.value)} className={IC} placeholder="From Firebase Authentication"/><p className="text-xs text-slate-400 mt-1">Firebase Console → Authentication → Users → copy the UID.</p></div>}
+        <div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Role</label><select value={form.role||"volunteer"} onChange={e=>setF("role",e.target.value)} className={IC}><option value="volunteer">Volunteer</option><option value="coordinator">Coordinator</option></select></div>
+        {err&&<div className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-xl">{err}</div>}
+      </div>
+      <button onClick={handleSave} className="w-full bg-slate-900 text-white font-semibold py-4 rounded-2xl text-sm">Save Person</button>
+    </div>);
+    return(<div className="p-4 space-y-4">
+      <div className="flex items-center justify-between"><h2 className="text-base font-bold text-slate-800">People ({shown.length})</h2><button onClick={openNew} className="bg-slate-900 text-white text-xs px-4 py-2 rounded-xl font-medium">+ Add</button></div>
+      <div className="flex rounded-xl overflow-hidden border border-slate-200">
+        <button onClick={()=>setShowArchived(false)} className={`flex-1 py-2 text-xs font-bold ${!showArchived?"bg-slate-900 text-white":"bg-white text-slate-500"}`}>Active ({activePeople.length})</button>
+        <button onClick={()=>setShowArchived(true)} className={`flex-1 py-2 text-xs font-bold ${showArchived?"bg-slate-900 text-white":"bg-white text-slate-500"}`}>Archived ({archivedPeople.length})</button>
+      </div>
+      {shown.length===0?<Empty icon="👤" title={showArchived?"No archived people":"No people yet"} subtitle=""/>
+      :shown.map(p=>(<div key={p.uid} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
+        <div className="flex items-center justify-between">
+          <div className="min-w-0">
+            <div className="font-semibold text-slate-800 flex items-center gap-1.5">{p.name}{p.uid===currentUid&&<span className="text-xs text-teal-600 font-normal">(you)</span>}{p.protected&&<span className="text-xs text-amber-600">🔒</span>}</div>
+            <div className="text-sm text-slate-400 mt-0.5 truncate">{p.email}</div>
+            <span className={`inline-block mt-1.5 text-xs px-2.5 py-0.5 rounded-full font-medium capitalize ${p.role==="coordinator"?"bg-indigo-100 text-indigo-700":"bg-slate-100 text-slate-600"}`}>{p.role}</span>
+          </div>
+          <div className="flex flex-col items-end gap-1.5 ml-3 flex-shrink-0">
+            <button onClick={()=>openEdit(p)} className="text-xs text-teal-600 font-medium">Edit</button>
+            {!p.protected&&<button onClick={()=>archivePerson(p)} className="text-xs text-slate-400">{showArchived?"Unarchive":"Archive"}</button>}
+            {!p.protected&&<button onClick={()=>deletePerson(p)} className="text-xs text-red-400">Delete</button>}
+          </div>
+        </div>
+      </div>))}
+    </div>);
+  }
+
+  // ── HISTORY TAB ─────────────────────────────────────────────────
+  function HistoryTab({data,person}){
+    const [date,setDate]=useState(todayISO());
+    const [records,setRecords]=useState({});
+    const [notes,setNotes]=useState("");
+    const unsubRef=useRef(null);
+    useEffect(()=>{
+      if(unsubRef.current)unsubRef.current();
+      const unsub=db.listen(`sag_daily/${date}`,val=>setRecords(val||{}));
+      unsubRef.current=unsub;
+      db.get(`sag_daily_notes/${date}`).then(n=>setNotes(n?.notes||""));
+      return()=>{if(unsubRef.current)unsubRef.current();};
+    },[date]);
+
+    const doPrint=()=>{
+      const rows=CATS.map(c=>{const r=records[c.id]||{};return`<tr style="border-bottom:1px solid #eee"><td style="padding:4px 6px;text-align:center">${c.n}</td><td style="padding:4px 6px">${c.name}${r.urgent?` <b style="color:red">⚠️</b>`:""}</td><td style="padding:4px 6px;text-align:center">${r.am?"✓":""}</td><td style="padding:4px 6px;text-align:center">${r.pm?"✓":""}</td><td style="padding:4px 6px;text-align:center">${r.ate?"✓":""}</td><td style="padding:4px 6px;text-align:center">${r.water?"✓":""}</td><td style="padding:4px 6px;text-align:center">${r.litter?"✓":""}</td><td style="padding:4px 6px;text-align:center">${r.med?"✓":""}</td><td style="padding:4px 6px;font-size:11px">${r.careNotes||""}</td><td style="padding:4px 6px;font-size:11px">${r.medNotes||""}</td></tr>`;}).join("");
+      const html=`<h2>Zaenid Michis — Care History</h2><p style="color:#666">${fmtDate(date)}</p>
+        <table style="width:100%;border-collapse:collapse;font-size:12px;margin-top:12px">
+          <thead><tr style="background:#0f172a;color:white"><th style="padding:6px">#</th><th style="padding:6px;text-align:left">Name</th><th style="padding:6px">AM</th><th style="padding:6px">PM</th><th style="padding:6px">Ate</th><th style="padding:6px">Water</th><th style="padding:6px">Litter</th><th style="padding:6px">Med</th><th style="padding:6px;text-align:left">Care Notes</th><th style="padding:6px;text-align:left">Medical Notes</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>${notes?`<p style="margin-top:16px"><strong>General notes:</strong> ${notes}</p>`:""}`;
+      document.getElementById("printArea").innerHTML=html;window.print();
+    };
+
+    const visited=CATS.filter(c=>records[c.id]?.am||records[c.id]?.pm).length;
+    const urgents=CATS.filter(c=>records[c.id]?.urgent);
+
+    return(<div className="p-4 space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-base font-bold text-slate-800">History</h2>
+        <input type="date" value={date} onChange={e=>setDate(e.target.value)} className="border border-slate-200 rounded-xl px-3 py-1.5 text-sm focus:outline-none bg-white"/>
+      </div>
+      <div className="grid grid-cols-3 gap-2">
+        <div className="bg-white rounded-2xl border border-slate-100 p-3 text-center"><p className="text-2xl font-black text-teal-600">{visited}</p><p className="text-xs text-slate-500">Cats visited</p></div>
+        <div className="bg-white rounded-2xl border border-slate-100 p-3 text-center"><p className="text-2xl font-black text-slate-700">{CATS.length-visited}</p><p className="text-xs text-slate-500">Not checked</p></div>
+        <div className="bg-white rounded-2xl border border-slate-100 p-3 text-center"><p className={`text-2xl font-black ${urgents.length?"text-red-500":"text-emerald-500"}`}>{urgents.length}</p><p className="text-xs text-slate-500">Urgent</p></div>
+      </div>
+      {urgents.length>0&&<div className="bg-red-50 border border-red-200 rounded-2xl p-3"><p className="text-red-700 text-xs font-bold mb-1">⚠️ URGENT</p>{urgents.map(c=><p key={c.id} className="text-xs text-red-600">{c.n}. {c.name}{records[c.id]?.medNotes?` — ${records[c.id].medNotes}`:""}</p>)}</div>}
+      {notes&&<div className="bg-slate-50 border border-slate-200 rounded-2xl p-3"><p className="text-xs font-semibold text-slate-500 mb-1">General notes</p><p className="text-sm text-slate-700">{notes}</p></div>}
+      <button onClick={doPrint} className="w-full bg-slate-100 text-slate-700 font-semibold py-3 rounded-xl text-sm">🖨️ Print Full Report for {fmtDate(date)}</button>
+    </div>);
+  }
+
+  // ── SETTINGS TAB ────────────────────────────────────────────────
+  function SettingsTab({data,save,authUser}){
+    const [newPass,setNewPass]=useState("");const [confirm,setConfirm]=useState("");
+    const [msg,setMsg]=useState(null);const [busy,setBusy]=useState(false);
+    const [confirmText,setConfirmText]=useState("");const [dangerMsg,setDangerMsg]=useState(null);
+    const changePassword=async()=>{
+      setMsg(null);
+      if(newPass.length<6){setMsg({ok:false,text:"Password must be at least 6 characters."});return;}
+      if(newPass!==confirm){setMsg({ok:false,text:"Passwords do not match."});return;}
+      setBusy(true);
+      try{await authUser.updatePassword(newPass);setNewPass("");setConfirm("");setMsg({ok:true,text:"Password updated!"});}
+      catch(e){if(e.code==="auth/requires-recent-login"){await FAUTH.sendPasswordResetEmail(authUser.email);setMsg({ok:true,text:"Security check required — we sent a reset email instead."});}else setMsg({ok:false,text:"Couldn't update. Try again."});}
+      setBusy(false);
+    };
+    const wipeDailyRecords=async()=>{
+      if(confirmText!=="DELETE"){setDangerMsg("Type DELETE to confirm.");return;}
+      // We can't delete all sag_daily/* easily, but we can note this limitation
+      setDangerMsg("Contact your database admin to clear historical records.");
+      setConfirmText("");
+    };
+    return(<div className="p-4 space-y-4">
+      <h2 className="text-base font-bold text-slate-800">Settings</h2>
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 space-y-3">
+        <h3 className="font-semibold text-slate-700 text-sm">🔐 Change My Password</h3>
+        <div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">New password (min. 6 chars)</label><input type="password" value={newPass} onChange={e=>setNewPass(e.target.value)} className={IC} placeholder="New password"/></div>
+        <div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Confirm</label><input type="password" value={confirm} onChange={e=>setConfirm(e.target.value)} className={IC} placeholder="Repeat to confirm"/></div>
+        {msg&&<div className={`text-sm px-3 py-2 rounded-xl ${msg.ok?"bg-emerald-100 text-emerald-700":"bg-red-100 text-red-600"}`}>{msg.text}</div>}
+        <button onClick={changePassword} disabled={busy} className="w-full bg-slate-900 text-white font-semibold py-3 rounded-xl text-sm disabled:opacity-50">{busy?"Updating…":"Update Password"}</button>
+      </div>
+      <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4 text-sm text-amber-800 leading-relaxed">
+        <strong>💡 Adding volunteers:</strong> Create their login in Firebase Console first, then add them in the People tab using the same email and their Firebase UID.
+      </div>
+    </div>);
+  }
+
+  // ── VOLUNTEER APP ───────────────────────────────────────────────
+  function VolApp({authUser,person,data,save,onLogout}){
+    const [tab,setTab]=useState("care");
+    const [showSettings,setShowSettings]=useState(false);
+    if(showSettings)return(<div className="min-h-screen bg-slate-50 flex flex-col">
+      <header className="bg-slate-900 text-white px-4 py-3 flex items-center gap-3"><button onClick={()=>setShowSettings(false)} className="text-slate-300 text-sm">← Back</button><span className="font-bold text-sm">My Settings</span></header>
+      <main className="flex-1 p-4"><VolSettings authUser={authUser} onLogout={onLogout}/></main>
+    </div>);
+    const myTasks=data.tasks.filter(t=>t.date===todayISO()&&t.personId===person.uid);
+    const urgentCount=0; // computed in DailyCarTab
+    return(<div className="min-h-screen bg-slate-50 flex flex-col">
+      <header className="no-print bg-slate-900 text-white px-4 py-3 flex items-center justify-between sticky top-0 z-10">
+        <div className="flex items-center gap-2"><span className="text-xl">🐾</span><div><div className="font-bold text-sm">Zaenid Michis</div><div className="text-slate-400 text-xs">Hi, {person.name}!</div></div></div>
+        <div className="flex gap-2">
+          <button onClick={()=>setShowSettings(true)} className="text-slate-400 text-xs border border-slate-600 px-3 py-1.5 rounded-lg">⚙️</button>
+          <button onClick={onLogout} className="text-slate-400 text-xs border border-slate-600 px-3 py-1.5 rounded-lg">Sign out</button>
+        </div>
+      </header>
+      <main className="flex-1 overflow-auto pb-20">
+        {tab==="care"&&<DailyCarTab person={person} data={data} isCoord={false}/>}
+        {tab==="tasks"&&<VolTasks tasks={myTasks} data={data} save={save}/>}
+      </main>
+      <nav className="no-print fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex z-10">
+        <button onClick={()=>setTab("care")} className={`flex-1 py-2.5 flex flex-col items-center gap-0.5 ${tab==="care"?"text-teal-600":"text-slate-400"}`}>
+          <span className="text-xl leading-none">🐾</span><span className="text-[10px] font-medium">Daily Care</span>
+        </button>
+        <button onClick={()=>setTab("tasks")} className={`flex-1 py-2.5 flex flex-col items-center gap-0.5 relative ${tab==="tasks"?"text-teal-600":"text-slate-400"}`}>
+          <span className="text-xl leading-none">📋</span><span className="text-[10px] font-medium">My Tasks</span>
+          {myTasks.filter(t=>!t.done).length>0&&<span className="absolute top-1 right-6 bg-red-500 text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center">{myTasks.filter(t=>!t.done).length}</span>}
+        </button>
+      </nav>
+    </div>);
+  }
+
+  function VolTasks({tasks,data,save}){
+    const toggle=async id=>{await save("tasks",data.tasks.map(t=>t.id===id?{...t,done:!t.done,doneAt:new Date().toISOString()}:t));};
+    return(<div className="p-4 space-y-3">
+      <h2 className="text-base font-bold text-slate-800">My Special Tasks — Today</h2>
+      {tasks.length===0?<Empty icon="✅" title="No special tasks today" subtitle="Your coordinator will assign tasks here if needed."/>
+      :tasks.map(t=><div key={t.id} onClick={()=>toggle(t.id)} className={`bg-white rounded-2xl border shadow-sm p-4 flex items-center gap-3 cursor-pointer ${t.done?"border-emerald-200 bg-emerald-50":""}`}>
+        <div className={`w-7 h-7 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${t.done?"bg-emerald-500 border-emerald-500":"border-slate-300"}`}>
+          {t.done&&<span className="text-white text-xs font-bold">✓</span>}
+        </div>
+        <div className="flex-1">
+          <p className={`font-semibold text-sm ${t.done?"line-through text-slate-400":"text-slate-800"}`}>{t.type}</p>
+          {t.note&&<p className="text-xs text-slate-400 mt-0.5">{t.note}</p>}
+          {t.done&&t.doneAt&&<p className="text-xs text-emerald-600 mt-0.5">Done at {fmtTime(t.doneAt)}</p>}
+        </div>
+      </div>)}
+    </div>);
+  }
+
+  function VolSettings({authUser,onLogout}){
+    const [np,setNp]=useState("");const [cp,setCp]=useState("");const [msg,setMsg]=useState(null);const [busy,setBusy]=useState(false);
+    const change=async()=>{
+      setMsg(null);if(np.length<6){setMsg({ok:false,text:"Min. 6 characters."});return;}if(np!==cp){setMsg({ok:false,text:"Passwords don't match."});return;}
+      setBusy(true);try{await authUser.updatePassword(np);setNp("");setCp("");setMsg({ok:true,text:"Password updated!"});}catch(e){if(e.code==="auth/requires-recent-login"){await FAUTH.sendPasswordResetEmail(authUser.email);setMsg({ok:true,text:"Reset email sent — use that to change your password."});}else setMsg({ok:false,text:"Couldn't update. Try again."});}setBusy(false);
+    };
+    return(<div className="space-y-4">
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 space-y-3">
+        <h3 className="font-semibold text-slate-700 text-sm">🔐 Change My Password</h3>
+        <div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">New password</label><input type="password" value={np} onChange={e=>setNp(e.target.value)} className={IC} placeholder="Min. 6 characters"/></div>
+        <div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Confirm</label><input type="password" value={cp} onChange={e=>setCp(e.target.value)} className={IC} placeholder="Repeat"/></div>
+        {msg&&<div className={`text-sm px-3 py-2 rounded-xl ${msg.ok?"bg-emerald-100 text-emerald-700":"bg-red-100 text-red-600"}`}>{msg.text}</div>}
+        <button onClick={change} disabled={busy} className="w-full bg-slate-900 text-white font-semibold py-3 rounded-xl text-sm disabled:opacity-50">{busy?"Updating…":"Update Password"}</button>
+      </div>
+      <button onClick={onLogout} className="w-full text-slate-500 text-sm font-medium py-2">Sign out</button>
+    </div>);
+  }
+
+  // ── Shared ──────────────────────────────────────────────────────
+  const IC="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 bg-white";
+  function Empty({icon,title,subtitle}){return(<div className="text-center py-14"><div className="text-5xl mb-3">{icon}</div><p className="font-semibold text-slate-700">{title}</p>{subtitle&&<p className="text-sm text-slate-400 mt-1">{subtitle}</p>}</div>);}
+
+  // ── Render ──────────────────────────────────────────────────────
+  ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
 </body>
 </html>
