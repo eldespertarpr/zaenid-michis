@@ -12,11 +12,7 @@
   <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
   <link rel="apple-touch-icon" sizes="192x192" href="icon-192.png">
   <title>Zaenid Michis</title>
-  <script>
-    if ("serviceWorker" in navigator) {
-      window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js"));
-    }
-  </script>
+  <script>if("serviceWorker"in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js"));</script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script crossorigin src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
@@ -36,85 +32,17 @@
 <div id="root"></div>
 <div id="printArea"></div>
 <script type="text/babel">
-  const { useState, useEffect, useRef } = React;
-
-  // ── Firebase ────────────────────────────────────────────────────
-  if (!firebase.apps.length) {
-    firebase.initializeApp({
-      apiKey:"AIzaSyCiAQmrzirdICxSxxKjf9xaL7lBhU9hdnk",
-      authDomain:"zaenid-michis.firebaseapp.com",
-      databaseURL:"https://zaenid-michis-default-rtdb.firebaseio.com",
-      projectId:"zaenid-michis",
-      storageBucket:"zaenid-michis.firebasestorage.app",
-      messagingSenderId:"754852396413",
-      appId:"1:754852396413:web:f64fa553126cc01e102014"
-    });
-  }
-  const FDB = firebase.database();
-  const FAUTH = firebase.auth();
-
-  // ── Seed people (protected, always have access) ─────────────────
-  const SEED_PEOPLE = {
-    "A1kGcYM92TS8uiQQojDhRunsYSF3":{uid:"A1kGcYM92TS8uiQQojDhRunsYSF3",name:"Richard",email:"explorerfta@gmail.com",role:"coordinator",active:true,protected:true},
-    "ZN34jUTRbgPOTQBdsipQEEKKFAh1":{uid:"ZN34jUTRbgPOTQBdsipQEEKKFAh1",name:"Trizzy",email:"trizzycat@hotmail.com",role:"coordinator",active:true,protected:true},
-  };
-
-  // ── 128 cats ────────────────────────────────────────────────────
-  const CATS=[
-    {id:"c001",n:1,name:"Amapola"},{id:"c002",n:2,name:"Amber"},{id:"c003",n:3,name:"Anuel"},
-    {id:"c004",n:4,name:"Atenea"},{id:"c005",n:5,name:"Augusto"},{id:"c006",n:6,name:"Beethoven"},
-    {id:"c007",n:7,name:"Betty"},{id:"c008",n:8,name:"Binx"},{id:"c009",n:9,name:"Black Bean"},
-    {id:"c010",n:10,name:"Bolón"},{id:"c011",n:11,name:"Boo"},{id:"c012",n:12,name:"Boots"},
-    {id:"c013",n:13,name:"Bootstrap (Oriental)"},{id:"c014",n:14,name:"Brad Pitt"},{id:"c015",n:15,name:"Bruno"},
-    {id:"c016",n:16,name:"Buble"},{id:"c017",n:17,name:"Chad"},{id:"c018",n:18,name:"Chleo"},
-    {id:"c019",n:19,name:"Chunky"},{id:"c020",n:20,name:"Cinnamon"},{id:"c021",n:21,name:"Clyde"},
-    {id:"c022",n:22,name:"Coco"},{id:"c023",n:23,name:"Constantine"},{id:"c024",n:24,name:"Coon"},
-    {id:"c025",n:25,name:"Cranberry"},{id:"c026",n:26,name:"Curcuma"},{id:"c027",n:27,name:"D.F."},
-    {id:"c028",n:28,name:"Donatella la Gorda"},{id:"c029",n:29,name:"Donny"},{id:"c030",n:30,name:"Dora"},
-    {id:"c031",n:31,name:"Dumbo"},{id:"c032",n:32,name:"Dweller"},{id:"c033",n:33,name:"Esmeralda"},
-    {id:"c034",n:34,name:"Fantasma"},{id:"c035",n:35,name:"Fiel"},{id:"c036",n:36,name:"Fig Newton"},
-    {id:"c037",n:37,name:"Firenze"},{id:"c038",n:38,name:"Flash (Mariposa)"},{id:"c039",n:39,name:"Gemini"},
-    {id:"c040",n:40,name:"Gizmo"},{id:"c041",n:41,name:"Goldie"},{id:"c042",n:42,name:"Grecia"},
-    {id:"c043",n:43,name:"Gringo"},{id:"c044",n:44,name:"Grumpilina"},{id:"c045",n:45,name:"Hades"},
-    {id:"c046",n:46,name:"Igorina"},{id:"c047",n:47,name:"Iris (Onion)"},{id:"c048",n:48,name:"Jack"},
-    {id:"c049",n:49,name:"Jefe"},{id:"c050",n:50,name:"Jerry"},{id:"c051",n:51,name:"Jirou"},
-    {id:"c052",n:52,name:"Judy"},{id:"c053",n:53,name:"June"},{id:"c054",n:54,name:"Kevin"},
-    {id:"c055",n:55,name:"Kiko"},{id:"c056",n:56,name:"Leonardo"},{id:"c057",n:57,name:"Lilliepad"},
-    {id:"c058",n:58,name:"Lily"},{id:"c059",n:59,name:"Lion"},{id:"c060",n:60,name:"Llorin"},
-    {id:"c061",n:61,name:"Lola"},{id:"c062",n:62,name:"Lucifer (Soma)"},{id:"c063",n:63,name:"Maluma"},
-    {id:"c064",n:64,name:"Mamey"},{id:"c065",n:65,name:"Matt"},{id:"c066",n:66,name:"Meatball"},
-    {id:"c067",n:67,name:"Miso"},{id:"c068",n:68,name:"Mr. Green"},{id:"c069",n:69,name:"Mr. Wrinkles"},
-    {id:"c070",n:70,name:"Muta"},{id:"c071",n:71,name:"Mystic"},{id:"c072",n:72,name:"Nana"},
-    {id:"c073",n:73,name:"Naranja"},{id:"c074",n:74,name:"Nikolai"},{id:"c075",n:75,name:"Obrero"},
-    {id:"c076",n:76,name:"Oliver"},{id:"c077",n:77,name:"Ominous"},{id:"c078",n:78,name:"Owl"},
-    {id:"c079",n:79,name:"Panda"},{id:"c080",n:80,name:"Pebbles"},{id:"c081",n:81,name:"Persephone"},
-    {id:"c082",n:82,name:"Petal"},{id:"c083",n:83,name:"Pig"},{id:"c084",n:84,name:"Piña"},
-    {id:"c085",n:85,name:"Pseudo"},{id:"c086",n:86,name:"Red"},{id:"c087",n:87,name:"Reese"},
-    {id:"c088",n:88,name:"Ricardo (Enrique)"},{id:"c089",n:89,name:"Rose"},{id:"c090",n:90,name:"Safa"},
-    {id:"c091",n:91,name:"Salem"},{id:"c092",n:92,name:"Sally"},{id:"c093",n:93,name:"Sand"},
-    {id:"c094",n:94,name:"Sapphi"},{id:"c095",n:95,name:"Scotty"},{id:"c096",n:96,name:"Seer"},
-    {id:"c097",n:97,name:"Shadow"},{id:"c098",n:98,name:"Sibling (Kalo)"},{id:"c099",n:99,name:"Silvester (Josie)"},
-    {id:"c100",n:100,name:"Simba"},{id:"c101",n:101,name:"Snowflake"},{id:"c102",n:102,name:"Sombra"},
-    {id:"c103",n:103,name:"Speedy Gonzalez"},{id:"c104",n:104,name:"Spider Kitty"},{id:"c105",n:105,name:"Steve"},
-    {id:"c106",n:106,name:"Stone"},{id:"c107",n:107,name:"Storm"},{id:"c108",n:108,name:"Stripes"},
-    {id:"c109",n:109,name:"Tabby"},{id:"c110",n:110,name:"Taco"},{id:"c111",n:111,name:"Tara"},
-    {id:"c112",n:112,name:"Taro"},{id:"c113",n:113,name:"Teddy"},{id:"c114",n:114,name:"Tiggy"},
-    {id:"c115",n:115,name:"Tigher"},{id:"c116",n:116,name:"Tigress"},{id:"c117",n:117,name:"Tipo"},
-    {id:"c118",n:118,name:"Tita"},{id:"c119",n:119,name:"Triston"},{id:"c120",n:120,name:"Tuna"},
-    {id:"c121",n:121,name:"Tuqui"},{id:"c122",n:122,name:"Twisty"},{id:"c123",n:123,name:"Twity"},
-    {id:"c124",n:124,name:"Utah"},{id:"c125",n:125,name:"Villager"},{id:"c126",n:126,name:"Willow"},
-    {id:"c127",n:127,name:"Yang"},{id:"c128",n:128,name:"Ying"},
-  ];
-
-  const SPECIAL_TASKS=["Vet appointment","Move cat","Trap feral cat","Transfer to foster","Clean transport kennel","Clean trap cage","Laundry – towels & beds"];
-
-  // ── Helpers ─────────────────────────────────────────────────────
-  const todayISO=()=>new Date().toISOString().slice(0,10);
+  const {useState,useEffect,useRef}=React;
+  if(!firebase.apps.length){firebase.initializeApp({apiKey:"AIzaSyCiAQmrzirdICxSxxKjf9xaL7lBhU9hdnk",authDomain:"zaenid-michis.firebaseapp.com",databaseURL:"https://zaenid-michis-default-rtdb.firebaseio.com",projectId:"zaenid-michis",storageBucket:"zaenid-michis.firebasestorage.app",messagingSenderId:"754852396413",appId:"1:754852396413:web:f64fa553126cc01e102014"});}
+  const FDB=firebase.database(),FAUTH=firebase.auth();
+  const SEED={"A1kGcYM92TS8uiQQojDhRunsYSF3":{uid:"A1kGcYM92TS8uiQQojDhRunsYSF3",name:"Richard",email:"explorerfta@gmail.com",role:"coordinator",active:true,protected:true},"ZN34jUTRbgPOTQBdsipQEEKKFAh1":{uid:"ZN34jUTRbgPOTQBdsipQEEKKFAh1",name:"Trizzy",email:"trizzycat@hotmail.com",role:"coordinator",active:true,protected:true}};
+  const CATS=[{id:"c001",n:1,name:"Amapola"},{id:"c002",n:2,name:"Amber"},{id:"c003",n:3,name:"Anuel"},{id:"c004",n:4,name:"Atenea"},{id:"c005",n:5,name:"Augusto"},{id:"c006",n:6,name:"Beethoven"},{id:"c007",n:7,name:"Betty"},{id:"c008",n:8,name:"Binx"},{id:"c009",n:9,name:"Black Bean"},{id:"c010",n:10,name:"Bol\xf3n"},{id:"c011",n:11,name:"Boo"},{id:"c012",n:12,name:"Boots"},{id:"c013",n:13,name:"Bootstrap (Oriental)"},{id:"c014",n:14,name:"Brad Pitt"},{id:"c015",n:15,name:"Bruno"},{id:"c016",n:16,name:"Buble"},{id:"c017",n:17,name:"Chad"},{id:"c018",n:18,name:"Chleo"},{id:"c019",n:19,name:"Chunky"},{id:"c020",n:20,name:"Cinnamon"},{id:"c021",n:21,name:"Clyde"},{id:"c022",n:22,name:"Coco"},{id:"c023",n:23,name:"Constantine"},{id:"c024",n:24,name:"Coon"},{id:"c025",n:25,name:"Cranberry"},{id:"c026",n:26,name:"Curcuma"},{id:"c027",n:27,name:"D.F."},{id:"c028",n:28,name:"Donatella la Gorda"},{id:"c029",n:29,name:"Donny"},{id:"c030",n:30,name:"Dora"},{id:"c031",n:31,name:"Dumbo"},{id:"c032",n:32,name:"Dweller"},{id:"c033",n:33,name:"Esmeralda"},{id:"c034",n:34,name:"Fantasma"},{id:"c035",n:35,name:"Fiel"},{id:"c036",n:36,name:"Fig Newton"},{id:"c037",n:37,name:"Firenze"},{id:"c038",n:38,name:"Flash (Mariposa)"},{id:"c039",n:39,name:"Gemini"},{id:"c040",n:40,name:"Gizmo"},{id:"c041",n:41,name:"Goldie"},{id:"c042",n:42,name:"Grecia"},{id:"c043",n:43,name:"Gringo"},{id:"c044",n:44,name:"Grumpilina"},{id:"c045",n:45,name:"Hades"},{id:"c046",n:46,name:"Igorina"},{id:"c047",n:47,name:"Iris (Onion)"},{id:"c048",n:48,name:"Jack"},{id:"c049",n:49,name:"Jefe"},{id:"c050",n:50,name:"Jerry"},{id:"c051",n:51,name:"Jirou"},{id:"c052",n:52,name:"Judy"},{id:"c053",n:53,name:"June"},{id:"c054",n:54,name:"Kevin"},{id:"c055",n:55,name:"Kiko"},{id:"c056",n:56,name:"Leonardo"},{id:"c057",n:57,name:"Lilliepad"},{id:"c058",n:58,name:"Lily"},{id:"c059",n:59,name:"Lion"},{id:"c060",n:60,name:"Llorin"},{id:"c061",n:61,name:"Lola"},{id:"c062",n:62,name:"Lucifer (Soma)"},{id:"c063",n:63,name:"Maluma"},{id:"c064",n:64,name:"Mamey"},{id:"c065",n:65,name:"Matt"},{id:"c066",n:66,name:"Meatball"},{id:"c067",n:67,name:"Miso"},{id:"c068",n:68,name:"Mr. Green"},{id:"c069",n:69,name:"Mr. Wrinkles"},{id:"c070",n:70,name:"Muta"},{id:"c071",n:71,name:"Mystic"},{id:"c072",n:72,name:"Nana"},{id:"c073",n:73,name:"Naranja"},{id:"c074",n:74,name:"Nikolai"},{id:"c075",n:75,name:"Obrero"},{id:"c076",n:76,name:"Oliver"},{id:"c077",n:77,name:"Ominous"},{id:"c078",n:78,name:"Owl"},{id:"c079",n:79,name:"Panda"},{id:"c080",n:80,name:"Pebbles"},{id:"c081",n:81,name:"Persephone"},{id:"c082",n:82,name:"Petal"},{id:"c083",n:83,name:"Pig"},{id:"c084",n:84,name:"Pi\xf1a"},{id:"c085",n:85,name:"Pseudo"},{id:"c086",n:86,name:"Red"},{id:"c087",n:87,name:"Reese"},{id:"c088",n:88,name:"Ricardo (Enrique)"},{id:"c089",n:89,name:"Rose"},{id:"c090",n:90,name:"Safa"},{id:"c091",n:91,name:"Salem"},{id:"c092",n:92,name:"Sally"},{id:"c093",n:93,name:"Sand"},{id:"c094",n:94,name:"Sapphi"},{id:"c095",n:95,name:"Scotty"},{id:"c096",n:96,name:"Seer"},{id:"c097",n:97,name:"Shadow"},{id:"c098",n:98,name:"Sibling (Kalo)"},{id:"c099",n:99,name:"Silvester (Josie)"},{id:"c100",n:100,name:"Simba"},{id:"c101",n:101,name:"Snowflake"},{id:"c102",n:102,name:"Sombra"},{id:"c103",n:103,name:"Speedy Gonzalez"},{id:"c104",n:104,name:"Spider Kitty"},{id:"c105",n:105,name:"Steve"},{id:"c106",n:106,name:"Stone"},{id:"c107",n:107,name:"Storm"},{id:"c108",n:108,name:"Stripes"},{id:"c109",n:109,name:"Tabby"},{id:"c110",n:110,name:"Taco"},{id:"c111",n:111,name:"Tara"},{id:"c112",n:112,name:"Taro"},{id:"c113",n:113,name:"Teddy"},{id:"c114",n:114,name:"Tiggy"},{id:"c115",n:115,name:"Tigher"},{id:"c116",n:116,name:"Tigress"},{id:"c117",n:117,name:"Tipo"},{id:"c118",n:118,name:"Tita"},{id:"c119",n:119,name:"Triston"},{id:"c120",n:120,name:"Tuna"},{id:"c121",n:121,name:"Tuqui"},{id:"c122",n:122,name:"Twisty"},{id:"c123",n:123,name:"Twity"},{id:"c124",n:124,name:"Utah"},{id:"c125",n:125,name:"Villager"},{id:"c126",n:126,name:"Willow"},{id:"c127",n:127,name:"Yang"},{id:"c128",n:128,name:"Ying"}];
+  const STASKS=["Vet appointment","Move cat","Trap feral cat","Transfer to foster","Clean transport kennel","Clean trap cage","Laundry \u2013 towels & beds"];
+  const tod=()=>new Date().toISOString().slice(0,10);
   const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
-  const fmtDate=d=>new Date(d+"T12:00:00").toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"});
-  const fmtTime=iso=>new Date(iso).toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit"});
-
-  // ── DB ──────────────────────────────────────────────────────────
+  const fmtD=d=>new Date(d+"T12:00:00").toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"});
+  const fmtT=i=>new Date(i).toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit"});
+  const IC="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 bg-white";
   const db={
     async get(k){try{const s=await FDB.ref(k).get();return s.exists()?s.val():null;}catch{return null;}},
     async set(k,v){try{await FDB.ref(k).set(v);}catch(e){console.error(e);}},
@@ -122,675 +50,338 @@
     listen(k,cb){const r=FDB.ref(k);r.on("value",s=>cb(s.exists()?s.val():null));return()=>r.off("value");},
   };
 
-  // ── ROOT APP ────────────────────────────────────────────────────
   function App(){
-    const [authState,setAuthState]=useState("loading");
-    const [authUser, setAuthUser ]=useState(null);
-    const [person,   setPerson   ]=useState(null);
-    const [data,     setData     ]=useState({people:{},catPhotos:{},tasks:[]});
-
+    const [as,sAs]=useState("loading"),[au,sAu]=useState(null),[per,sPer]=useState(null),[dat,sDat]=useState({people:{},catPhotos:{},tasks:[]});
     const loadData=async()=>{
       const raw=await db.get("sag_people");
       const stored=(raw&&typeof raw==="object"&&!Array.isArray(raw))?raw:{};
       const merged={...stored};
-      Object.entries(SEED_PEOPLE).forEach(([u,p])=>{merged[u]={...p,...(stored[u]||{}),protected:true};});
+      Object.entries(SEED).forEach(([u,p])=>{merged[u]={...p,...(stored[u]||{}),protected:true};});
       const d={people:merged,catPhotos:(await db.get("sag_cat_photos"))??{},tasks:(await db.get("sag_tasks"))??[]};
-      setData(d);return d;
+      sDat(d);return d;
     };
-
     useEffect(()=>{
       const unsub=FAUTH.onAuthStateChanged(async u=>{
-        if(!u){setAuthUser(null);setPerson(null);setAuthState("signedOut");return;}
-        setAuthUser(u);
-        const d=await loadData();
-        const p=d.people[u.uid];
-        if(!p){setPerson({notRegistered:true,email:u.email});setAuthState("signedIn");return;}
-        if(p.active===false){setPerson({deactivated:true,email:u.email});setAuthState("signedIn");return;}
-        setPerson({...p,uid:u.uid});setAuthState("signedIn");
+        if(!u){sAu(null);sPer(null);sAs("out");return;}
+        sAu(u);const d=await loadData();const p=d.people[u.uid];
+        if(!p){sPer({notReg:true,email:u.email});sAs("in");return;}
+        if(p.active===false){sPer({deact:true,email:u.email});sAs("in");return;}
+        sPer({...p,uid:u.uid});sAs("in");
       });
       return()=>unsub();
     },[]);
-
-    const save=async(key,value)=>{
-      const km={people:"sag_people",catPhotos:"sag_cat_photos",tasks:"sag_tasks"};
-      setData(p=>({...p,[key]:value}));
-      await db.set(km[key],value);
-    };
-
+    const save=async(k,v)=>{const km={people:"sag_people",catPhotos:"sag_cat_photos",tasks:"sag_tasks"};sDat(p=>({...p,[k]:v}));await db.set(km[k],v);};
     const logout=()=>FAUTH.signOut();
-
-    if(authState==="loading") return <Splash/>;
-    if(authState==="signedOut") return <LoginScreen/>;
-    if(person?.notRegistered) return <GateScreen icon="🙈" title="Account not set up" msg={`${person.email} hasn't been added to People yet. Ask your coordinator.`} onLogout={logout}/>;
-    if(person?.deactivated)   return <GateScreen icon="⏸️" title="Account inactive"   msg={`${person.email} has been deactivated. Contact your coordinator.`}       onLogout={logout}/>;
-    if(person?.role==="coordinator") return <CoordApp authUser={authUser} person={person} data={data} save={save} onLogout={logout} reload={loadData}/>;
-    return <VolApp authUser={authUser} person={person} data={data} save={save} onLogout={logout}/>;
+    if(as==="loading")return <Splash/>;
+    if(as==="out")return <Login/>;
+    if(per?.notReg)return <Gate icon="\ud83d\ude48" title="Account not set up" msg={`${per.email} hasn't been added to People yet. Ask your coordinator.`} out={logout}/>;
+    if(per?.deact) return <Gate icon="\u23f8\ufe0f" title="Account inactive" msg={`${per.email} has been deactivated.`} out={logout}/>;
+    if(per?.role==="coordinator")return <CoordApp au={au} per={per} dat={dat} save={save} logout={logout} reload={loadData}/>;
+    return <VolApp au={au} per={per} dat={dat} save={save} logout={logout}/>;
   }
 
-  // ── Splash / Gate ────────────────────────────────────────────────
-  function Splash(){return(<div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center"><div className="text-6xl mb-3">🐾</div><div className="text-white font-bold text-xl">Zaenid Michis</div><div className="text-slate-400 text-sm mt-1">Loading…</div></div>);}
-  function GateScreen({icon,title,msg,onLogout}){return(<div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-6 text-center"><div className="text-6xl mb-4">{icon}</div><h1 className="text-white text-xl font-bold mb-2">{title}</h1><p className="text-slate-400 text-sm max-w-xs mb-6">{msg}</p><button onClick={onLogout} className="text-slate-300 text-sm border border-slate-600 px-4 py-2 rounded-lg">Sign out</button></div>);}
+  function Splash(){return <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center"><div className="text-6xl mb-3">\ud83d\udc3e</div><div className="text-white font-bold text-xl">Zaenid Michis</div><div className="text-slate-400 text-sm mt-1">Loading\u2026</div></div>;}
+  function Gate({icon,title,msg,out}){return <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-6 text-center"><div className="text-6xl mb-4">{icon}</div><h1 className="text-white text-xl font-bold mb-2">{title}</h1><p className="text-slate-400 text-sm max-w-xs mb-6">{msg}</p><button onClick={out} className="text-slate-300 text-sm border border-slate-600 px-4 py-2 rounded-lg">Sign out</button></div>;}
 
-  // ── Login ─────────────────────────────────────────────────────
-  function LoginScreen(){
-    const [email,setEmail]=useState("");const [pass,setPass]=useState("");
-    const [err,setErr]=useState("");const [busy,setBusy]=useState(false);const [rmsg,setRmsg]=useState("");
-    const submit=async()=>{
-      setErr("");setRmsg("");
-      if(!email.trim()||!pass){setErr("Enter your email and password.");return;}
-      setBusy(true);
-      try{await FAUTH.signInWithEmailAndPassword(email.trim(),pass);}
-      catch(e){const m={"auth/invalid-credential":"Incorrect email or password.","auth/wrong-password":"Incorrect password.","auth/user-not-found":"No account found.","auth/too-many-requests":"Too many attempts. Try later."};setErr(m[e.code]||"Couldn't sign in.");}
-      setBusy(false);
-    };
-    const forgot=async()=>{
-      setErr("");setRmsg("");
-      if(!email.trim()){setErr("Enter your email first.");return;}
-      setBusy(true);
-      try{await FAUTH.sendPasswordResetEmail(email.trim());setRmsg("✅ Reset email sent! Check your inbox.");}
-      catch{setErr("Couldn't send reset email.");}
-      setBusy(false);
-    };
-    return(<div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-6">
-      <div className="w-full max-w-sm">
-        <div className="text-center mb-8"><div className="text-7xl mb-4">🐾</div><h1 className="text-3xl font-bold text-white">Zaenid Michis</h1><p className="text-slate-400 mt-2 text-sm">Cat Care Center</p></div>
-        <div className="bg-white rounded-2xl p-6 shadow-2xl space-y-3">
-          <div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Email</label>
-            <input type="email" autoCapitalize="none" value={email} onChange={e=>{setEmail(e.target.value);setErr("");}} onKeyDown={e=>e.key==="Enter"&&submit()} placeholder="you@email.com" className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:border-teal-500" autoFocus/></div>
-          <div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Password</label>
-            <input type="password" value={pass} onChange={e=>{setPass(e.target.value);setErr("");}} onKeyDown={e=>e.key==="Enter"&&submit()} placeholder="••••••••" className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:border-teal-500"/></div>
-          {err&&<p className="text-red-500 text-sm">{err}</p>}
-          {rmsg&&<p className="text-emerald-600 text-sm">{rmsg}</p>}
-          <button onClick={submit} disabled={busy} className="w-full bg-slate-900 text-white font-semibold py-3.5 rounded-xl text-sm disabled:opacity-50">{busy?"Please wait…":"Sign In"}</button>
-          <button onClick={forgot} disabled={busy} className="w-full text-teal-600 text-sm font-medium py-1">Forgot password?</button>
-        </div>
-      </div>
-    </div>);
+  function Login(){
+    const [em,sEm]=useState(""),[pw,sPw]=useState(""),[err,sErr]=useState(""),[busy,sBusy]=useState(false),[rm,sRm]=useState("");
+    const go=async()=>{sErr("");sRm("");if(!em.trim()||!pw){sErr("Enter email and password.");return;}sBusy(true);try{await FAUTH.signInWithEmailAndPassword(em.trim(),pw);}catch(e){const m={"auth/invalid-credential":"Incorrect email or password.","auth/wrong-password":"Incorrect password.","auth/user-not-found":"No account found.","auth/too-many-requests":"Too many attempts."};sErr(m[e.code]||"Couldn't sign in.");}sBusy(false);};
+    const forgot=async()=>{sErr("");sRm("");if(!em.trim()){sErr("Enter your email first.");return;}sBusy(true);try{await FAUTH.sendPasswordResetEmail(em.trim());sRm("\u2705 Reset email sent!");}catch{sErr("Couldn't send email.");}sBusy(false);};
+    return <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-6"><div className="w-full max-w-sm"><div className="text-center mb-8"><div className="text-7xl mb-4">\ud83d\udc3e</div><h1 className="text-3xl font-bold text-white">Zaenid Michis</h1><p className="text-slate-400 mt-2 text-sm">Cat Care Center</p></div><div className="bg-white rounded-2xl p-6 shadow-2xl space-y-3"><div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Email</label><input type="email" autoCapitalize="none" value={em} onChange={e=>{sEm(e.target.value);sErr("");}} onKeyDown={e=>e.key==="Enter"&&go()} placeholder="you@email.com" className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:border-teal-500" autoFocus/></div><div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Password</label><input type="password" value={pw} onChange={e=>{sPw(e.target.value);sErr("");}} onKeyDown={e=>e.key==="Enter"&&go()} placeholder="\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022" className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:border-teal-500"/></div>{err&&<p className="text-red-500 text-sm">{err}</p>}{rm&&<p className="text-emerald-600 text-sm">{rm}</p>}<button onClick={go} disabled={busy} className="w-full bg-slate-900 text-white font-semibold py-3.5 rounded-xl text-sm disabled:opacity-50">{busy?"Please wait\u2026":"Sign In"}</button><button onClick={forgot} disabled={busy} className="w-full text-teal-600 text-sm font-medium py-1">Forgot password?</button></div></div></div>;
   }
 
-  // ── COORDINATOR APP ─────────────────────────────────────────────
-  function CoordApp({authUser,person,data,save,onLogout,reload}){
-    const [tab,setTab]=useState("care");
-    const TABS=[
-      {id:"care",  icon:"🐾",label:"Daily Care"},
-      {id:"tasks", icon:"📋",label:"Tasks"},
-      {id:"cats",  icon:"🐱",label:"Cats"},
-      {id:"people",icon:"👤",label:"People"},
-      {id:"history",icon:"📅",label:"History"},
-      {id:"settings",icon:"⚙️",label:"Settings"},
-    ];
-    return(<div className="min-h-screen bg-slate-50 flex flex-col">
-      <header className="no-print bg-slate-900 text-white px-4 py-3 flex items-center justify-between sticky top-0 z-10">
-        <div className="flex items-center gap-2"><span className="text-xl">🐾</span>
-          <div><div className="font-bold text-sm">Zaenid Michis</div><div className="text-slate-400 text-xs">Coordinator · {person.name}</div></div>
-        </div>
-        <button onClick={onLogout} className="text-slate-400 text-xs border border-slate-600 px-3 py-1.5 rounded-lg">Sign out</button>
-      </header>
+  function CoordApp({au,per,dat,save,logout,reload}){
+    const [tab,sTab]=useState("care");
+    const T=[{id:"care",icon:"\ud83d\udc3e",label:"Daily Care"},{id:"tasks",icon:"\ud83d\udccb",label:"Tasks"},{id:"cats",icon:"\ud83d\udc31",label:"Cats"},{id:"people",icon:"\ud83d\udc64",label:"People"},{id:"history",icon:"\ud83d\udcc5",label:"History"},{id:"settings",icon:"\u2699\ufe0f",label:"Settings"}];
+    return <div className="min-h-screen bg-slate-50 flex flex-col">
+      <header className="no-print bg-slate-900 text-white px-4 py-3 flex items-center justify-between sticky top-0 z-10"><div className="flex items-center gap-2"><span className="text-xl">\ud83d\udc3e</span><div><div className="font-bold text-sm">Zaenid Michis</div><div className="text-slate-400 text-xs">Coordinator \u00b7 {per.name}</div></div></div><button onClick={logout} className="text-slate-400 text-xs border border-slate-600 px-3 py-1.5 rounded-lg">Sign out</button></header>
       <main className="flex-1 overflow-auto pb-20">
-        {tab==="care"    &&<DailyCarTab    person={person} data={data} isCoord/>}
-        {tab==="tasks"   &&<TasksTab       data={data} save={save} person={person}/>}
-        {tab==="cats"    &&<CatsPhotoTab   data={data} save={save}/>}
-        {tab==="people"  &&<PeopleTab      data={data} save={save} currentUid={authUser.uid}/>}
-        {tab==="history" &&<HistoryTab     data={data} person={person}/>}
-        {tab==="settings"&&<SettingsTab    data={data} save={save} authUser={authUser}/>}
+        {tab==="care"&&<CareTab per={per} dat={dat} isCoord/>}
+        {tab==="tasks"&&<TasksTab dat={dat} save={save} per={per}/>}
+        {tab==="cats"&&<CatsTab dat={dat} save={save}/>}
+        {tab==="people"&&<PeopleTab dat={dat} save={save} myUid={au.uid}/>}
+        {tab==="history"&&<HistTab dat={dat}/>}
+        {tab==="settings"&&<SetTab dat={dat} save={save} au={au}/>}
       </main>
-      <nav className="no-print fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex z-10">
-        {TABS.map(t=><button key={t.id} onClick={()=>setTab(t.id)} className={`flex-1 py-2 flex flex-col items-center gap-0.5 min-w-0 ${tab===t.id?"text-teal-600":"text-slate-400"}`}>
-          <span className="text-base leading-none">{t.icon}</span>
-          <span className="text-[10px] font-medium leading-none">{t.label}</span>
-        </button>)}
-      </nav>
-    </div>);
+      <nav className="no-print fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex z-10">{T.map(t=><button key={t.id} onClick={()=>sTab(t.id)} className={`flex-1 py-2 flex flex-col items-center gap-0.5 min-w-0 ${tab===t.id?"text-teal-600":"text-slate-400"}`}><span className="text-base leading-none">{t.icon}</span><span className="text-[10px] font-medium leading-none">{t.label}</span></button>)}</nav>
+    </div>;
   }
 
-  // ── DAILY CARE TAB ──────────────────────────────────────────────
-  function DailyCarTab({person,data,isCoord}){
-    const [date,setDate]=useState(todayISO());
-    const [records,setRecords]=useState({});
-    const [search,setSearch]=useState("");
-    const [filter,setFilter]=useState("all"); // all | urgent | pending
-    const [selected,setSelected]=useState(null); // cat being edited
-    const [genNotes,setGenNotes]=useState("");
-    const unsubRef=useRef(null);
-
+  function CareTab({per,dat,isCoord}){
+    const [date,sDate]=useState(tod());
+    const [recs,sRecs]=useState({});
+    const [srch,sSrch]=useState("");
+    const [filt,sFilt]=useState("all");
+    const [sel,sSel]=useState(null);
+    const [gnotes,sGnotes]=useState("");
+    const uref=useRef(null);
     useEffect(()=>{
-      if(unsubRef.current) unsubRef.current();
-      const unsub=db.listen(`sag_daily/${date}`,val=>{setRecords(val||{});});
-      unsubRef.current=unsub;
-      db.get(`sag_daily_notes/${date}`).then(n=>setGenNotes(n?.notes||""));
-      return()=>{ if(unsubRef.current) unsubRef.current(); };
+      if(uref.current)uref.current();
+      const unsub=db.listen(`sag_daily/${date}`,v=>{sRecs(v||{});});
+      uref.current=unsub;
+      db.get(`sag_daily_notes/${date}`).then(n=>sGnotes(n?.notes||""));
+      return()=>{if(uref.current)uref.current();};
     },[date]);
-
-    const markField=async(catId,field,value)=>{
+    const mark=async(cid,field,val)=>{
       const now=new Date().toISOString();
-      const patch={[field]:value,updatedBy:person.name,updatedAt:now};
-      setRecords(r=>({...r,[catId]:{...(r[catId]||{}),updatedBy:person.name,updatedAt:now,[field]:value}}));
-      await db.patch(`sag_daily/${date}/${catId}`,patch);
+      sRecs(r=>({...r,[cid]:{...(r[cid]||{}),updatedBy:per.name,updatedAt:now,[field]:val}}));
+      await db.patch(`sag_daily/${date}/${cid}`,{[field]:val,updatedBy:per.name,updatedAt:now});
     };
-
-    const saveNotes=async(notes)=>{
-      setGenNotes(notes);
-      await db.set(`sag_daily_notes/${date}`,{notes,updatedBy:person.name,updatedAt:new Date().toISOString()});
-    };
-
-    const urgents=CATS.filter(c=>records[c.id]?.urgent);
-
-    const filtered=CATS.filter(c=>{
-      if(search&&!c.name.toLowerCase().includes(search.toLowerCase())&&!String(c.n).includes(search)) return false;
-      if(filter==="urgent"&&!records[c.id]?.urgent) return false;
-      if(filter==="pending"){const r=records[c.id];if(r?.am&&r?.pm) return false;}
+    const saveGnotes=async v=>{sGnotes(v);await db.set(`sag_daily_notes/${date}`,{notes:v,by:per.name,at:new Date().toISOString()});};
+    const urgents=CATS.filter(c=>recs[c.id]?.urgent);
+    const vis=CATS.filter(c=>{
+      if(srch&&!c.name.toLowerCase().includes(srch.toLowerCase())&&!String(c.n).includes(srch))return false;
+      if(filt==="urgent"&&!recs[c.id]?.urgent)return false;
+      if(filt==="pending"){const r=recs[c.id];if(r?.am&&r?.pm)return false;}
       return true;
     });
-
     const doPrint=()=>{
-      const rows=CATS.map(c=>{
-        const r=records[c.id]||{};
-        return `<tr style="border-bottom:1px solid #eee;">
-          <td style="padding:4px 6px;text-align:center">${c.n}</td>
-          <td style="padding:4px 6px">${c.name}${r.urgent?` <span style="color:red;font-weight:bold">⚠️</span>`:""}</td>
-          <td style="padding:4px 6px;text-align:center">${r.am?"✓":""}</td>
-          <td style="padding:4px 6px;text-align:center">${r.pm?"✓":""}</td>
-          <td style="padding:4px 6px;text-align:center">${r.ate?"✓":""}</td>
-          <td style="padding:4px 6px;text-align:center">${r.water?"✓":""}</td>
-          <td style="padding:4px 6px;text-align:center">${r.litter?"✓":""}</td>
-          <td style="padding:4px 6px;text-align:center">${r.med?"✓":""}</td>
-          <td style="padding:4px 6px;font-size:11px">${r.careNotes||""}</td>
-          <td style="padding:4px 6px;font-size:11px">${r.medNotes||""}</td>
-        </tr>`;
-      }).join("");
-      const html=`<h2 style="margin:0 0 4px">Zaenid Michis — Daily Care Report</h2>
-        <p style="margin:0 0 12px;color:#666">${fmtDate(date)} | Total: ${CATS.length} cats</p>
-        ${urgents.length?`<p style="color:red;margin-bottom:8px;font-weight:bold">⚠️ URGENT: ${urgents.map(c=>c.name).join(", ")}</p>`:""}
-        <table style="width:100%;border-collapse:collapse;font-size:12px">
-          <thead><tr style="background:#0f172a;color:white">
-            <th style="padding:6px">#</th><th style="padding:6px;text-align:left">Name</th>
-            <th style="padding:6px">AM</th><th style="padding:6px">PM</th>
-            <th style="padding:6px">Ate</th><th style="padding:6px">Water</th>
-            <th style="padding:6px">Litter</th><th style="padding:6px">Med</th>
-            <th style="padding:6px;text-align:left">Care notes</th>
-            <th style="padding:6px;text-align:left">Medical notes</th>
-          </tr></thead>
-          <tbody>${rows}</tbody>
-        </table>
-        ${genNotes?`<p style="margin-top:16px"><strong>General notes:</strong> ${genNotes}</p>`:""}`;
-      document.getElementById("printArea").innerHTML=html;
+      const rows=CATS.map(c=>{const r=recs[c.id]||{};return`<tr style="border-bottom:1px solid #eee"><td style="padding:4px 6px;text-align:center">${c.n}</td><td style="padding:4px 6px">${c.name}${r.urgent?` <b style="color:red">\u26a0\ufe0f</b>`:""}</td><td style="padding:4px 6px;text-align:center">${r.am?"\u2713":""}</td><td style="padding:4px 6px;text-align:center">${r.pm?"\u2713":""}</td><td style="padding:4px 6px;text-align:center">${r.ate?"\u2713":""}</td><td style="padding:4px 6px;text-align:center">${r.water?"\u2713":""}</td><td style="padding:4px 6px;text-align:center">${r.litter?"\u2713":""}</td><td style="padding:4px 6px;text-align:center">${r.med?"\u2713":""}</td><td style="padding:4px 6px;font-size:11px">${r.careNotes||""}</td><td style="padding:4px 6px;font-size:11px">${r.medNotes||""}</td></tr>`;}).join("");
+      document.getElementById("printArea").innerHTML=`<h2 style="margin:0 0 4px">Zaenid Michis \u2014 Daily Care Report</h2><p style="margin:0 0 12px;color:#666">${fmtD(date)}</p>${urgents.length?`<p style="color:red;margin-bottom:8px;font-weight:bold">\u26a0\ufe0f URGENT: ${urgents.map(c=>c.name).join(", ")}</p>`:""}<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#0f172a;color:white"><th style="padding:6px">#</th><th style="padding:6px;text-align:left">Name</th><th style="padding:6px">AM</th><th style="padding:6px">PM</th><th style="padding:6px">Ate</th><th style="padding:6px">Water</th><th style="padding:6px">Litter</th><th style="padding:6px">Med</th><th style="padding:6px;text-align:left">Care Notes</th><th style="padding:6px;text-align:left">Medical Notes</th></tr></thead><tbody>${rows}</tbody></table>${gnotes?`<p style="margin-top:16px"><strong>General notes:</strong> ${gnotes}</p>`:""}`;
       window.print();
     };
-
-    const doUrgentPrint=()=>{
-      if(!urgents.length){alert("No urgent cats today.");return;}
-      const rows=urgents.map(c=>{const r=records[c.id]||{};return`<tr style="background:#fff3f3;border-bottom:1px solid #fca5a5"><td style="padding:6px 8px">${c.n}. ${c.name}</td><td style="padding:6px 8px">${r.careNotes||"—"}</td><td style="padding:6px 8px">${r.medNotes||"—"}</td><td style="padding:6px 8px;font-size:11px">${r.updatedBy||""}${r.updatedAt?" at "+fmtTime(r.updatedAt):""}</td></tr>`;}).join("");
-      const html=`<h2 style="color:red;margin:0 0 4px">⚠️ URGENT CATS — ${fmtDate(date)}</h2>
-        <table style="width:100%;border-collapse:collapse;font-size:13px;margin-top:12px">
-          <thead><tr style="background:#ef4444;color:white"><th style="padding:6px;text-align:left">Cat</th><th style="padding:6px;text-align:left">Care notes</th><th style="padding:6px;text-align:left">Medical notes</th><th style="padding:6px;text-align:left">Marked by</th></tr></thead>
-          <tbody>${rows}</tbody>
-        </table>`;
-      document.getElementById("printArea").innerHTML=html;
+    const doUrgPrint=()=>{
+      if(!urgents.length){alert("No urgent cats.");return;}
+      const rows=urgents.map(c=>{const r=recs[c.id]||{};return`<tr style="background:#fff3f3;border-bottom:1px solid #fca5a5"><td style="padding:6px 8px">${c.n}. ${c.name}</td><td style="padding:6px 8px">${r.careNotes||"\u2014"}</td><td style="padding:6px 8px">${r.medNotes||"\u2014"}</td><td style="padding:6px 8px;font-size:11px">${r.updatedBy||""}${r.updatedAt?" at "+fmtT(r.updatedAt):""}</td></tr>`;}).join("");
+      document.getElementById("printArea").innerHTML=`<h2 style="color:red;margin:0 0 4px">\u26a0\ufe0f URGENT CATS \u2014 ${fmtD(date)}</h2><table style="width:100%;border-collapse:collapse;font-size:13px;margin-top:12px"><thead><tr style="background:#ef4444;color:white"><th style="padding:6px;text-align:left">Cat</th><th style="padding:6px;text-align:left">Care notes</th><th style="padding:6px;text-align:left">Medical notes</th><th style="padding:6px;text-align:left">Marked by</th></tr></thead><tbody>${rows}</tbody></table>`;
       window.print();
     };
-
-    return(<div className="flex flex-col h-full">
-      {/* Header controls */}
+    return <div className="flex flex-col" style={{height:"calc(100vh - 112px)"}}>
       <div className="no-print sticky top-0 bg-white border-b border-slate-100 z-10 px-4 py-3 space-y-2">
         <div className="flex items-center gap-2">
-          <input type="date" value={date} onChange={e=>setDate(e.target.value)} className="flex-1 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"/>
-          <button onClick={doPrint} className="text-xs bg-slate-100 text-slate-700 px-3 py-2 rounded-lg font-semibold flex-shrink-0">🖨️ Report</button>
-          {urgents.length>0&&<button onClick={doUrgentPrint} className="text-xs bg-red-100 text-red-700 px-3 py-2 rounded-lg font-semibold flex-shrink-0">🚨 Urgent</button>}
+          <input type="date" value={date} onChange={e=>sDate(e.target.value)} className="flex-1 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none"/>
+          <button onClick={doPrint} className="text-xs bg-slate-100 text-slate-700 px-3 py-2 rounded-lg font-semibold flex-shrink-0">\ud83d\udda8\ufe0f Print</button>
+          {urgents.length>0&&<button onClick={doUrgPrint} className="text-xs bg-red-100 text-red-700 px-3 py-2 rounded-lg font-semibold flex-shrink-0">\u26a0\ufe0f Urgent</button>}
         </div>
-        <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="🔍 Search cat by name or number…" className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"/>
+        <input value={srch} onChange={e=>sSrch(e.target.value)} placeholder="\ud83d\udd0d Search cat by name or number\u2026" className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none"/>
         <div className="flex gap-1.5">
-          {[["all","All 128"],["urgent","🚨 Urgent"],["pending","○ Pending"]].map(([f,l])=>(
-            <button key={f} onClick={()=>setFilter(f)} className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-colors ${filter===f?"bg-slate-900 text-white":"bg-slate-100 text-slate-600"}`}>{l}</button>
-          ))}
+          {[["all","All 128"],["urgent","\u26a0\ufe0f Urgent"],["pending","\u25cb Pending"]].map(([f,l])=><button key={f} onClick={()=>sFilt(f)} className={`flex-1 py-1.5 rounded-lg text-xs font-semibold ${filt===f?"bg-slate-900 text-white":"bg-slate-100 text-slate-600"}`}>{l}</button>)}
         </div>
-        {urgents.length>0&&<div className="bg-red-50 border border-red-200 rounded-xl px-3 py-2"><p className="text-red-700 text-xs font-bold">⚠️ URGENT: {urgents.map(c=>c.name).join(", ")}</p></div>}
+        {urgents.length>0&&<div className="bg-red-50 border border-red-200 rounded-xl px-3 py-2"><p className="text-red-700 text-xs font-bold">\u26a0\ufe0f URGENT: {urgents.map(c=>c.name).join(", ")}</p></div>}
       </div>
-
-      {/* Cat list */}
       <div className="flex-1 overflow-auto">
-        {filtered.length===0?(<div className="text-center py-12 text-slate-400"><div className="text-4xl mb-2">🔍</div><p>No cats match your filter.</p></div>)
-        :(<div className="divide-y divide-slate-100">
-          {filtered.map(cat=>{
-            const r=records[cat.id]||{};
-            const photo=data.catPhotos?.[cat.id];
-            const isUrgent=!!r.urgent;
-            return(<div key={cat.id} onClick={()=>setSelected(cat)} className={`flex items-center gap-3 px-4 py-3 cursor-pointer active:bg-slate-50 ${isUrgent?"bg-red-50 border-l-4 border-red-500":""}`}>
-              {photo?<img src={photo} alt={cat.name} className="w-10 h-10 rounded-full object-cover flex-shrink-0"/>:<div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center flex-shrink-0 text-xs font-bold text-slate-500">{cat.n}</div>}
+        <div className="divide-y divide-slate-100">
+          {vis.map(cat=>{
+            const r=recs[cat.id]||{};const ph=dat.catPhotos?.[cat.id];
+            return <div key={cat.id} onClick={()=>sSel(cat)} className={`flex items-center gap-3 px-4 py-3 cursor-pointer ${r.urgent?"bg-red-50 border-l-4 border-red-500":"active:bg-slate-50"}`}>
+              {ph?<img src={ph} alt={cat.name} className="w-10 h-10 rounded-full object-cover flex-shrink-0"/>:<div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-500 flex-shrink-0">{cat.n}</div>}
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1.5 flex-wrap">
                   <span className="font-semibold text-sm text-slate-800">{cat.name}</span>
-                  {isUrgent&&<span className="text-xs bg-red-500 text-white px-1.5 py-0.5 rounded-full font-bold">⚠️ URGENT</span>}
+                  {r.urgent&&<span className="text-[10px] bg-red-500 text-white px-1.5 py-0.5 rounded-full font-bold">URGENT</span>}
                 </div>
-                <div className="flex gap-2 mt-1">
-                  {[["AM",r.am,"☀️"],["PM",r.pm,"🌙"],["Ate",r.ate,"🍽️"],["💧",r.water,"💧"],["🪣",r.litter,"🪣"],["Med",r.med,"💊"]].map(([label,val,icon])=>(
-                    <span key={label} className={`text-xs font-semibold ${val?"text-emerald-600":"text-slate-300"}`}>{icon}</span>
+                <div className="flex gap-1 mt-1 flex-wrap">
+                  {[["AM","\u2600\ufe0f",r.am],["PM","\ud83c\udf19",r.pm],["Food","\ud83c\udf7d\ufe0f",r.ate],["Water","\ud83d\udca7",r.water],["Litter","\ud83e\udea3",r.litter],["Med","\ud83d\udc8a",r.med]].map(([label,icon,val],i)=>(
+                    <span key={i} className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${val?"bg-emerald-100 text-emerald-700":"bg-slate-100 text-slate-400"}`}>
+                      {val?"✓ ":""}{label}
+                    </span>
                   ))}
                 </div>
               </div>
-              <span className="text-slate-300 text-sm flex-shrink-0">›</span>
-            </div>);
+              <span className="text-slate-300 text-sm">\u203a</span>
+            </div>;
           })}
-        </div>)}
-
-        {/* General notes */}
+        </div>
         <div className="p-4">
           <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">General shift notes</label>
-          <textarea value={genNotes} onChange={e=>saveNotes(e.target.value)} rows={3} placeholder="Any general observations for this day…" className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 bg-white"/>
+          <textarea value={gnotes} onChange={e=>saveGnotes(e.target.value)} rows={3} placeholder="Any general observations for this day\u2026" className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none bg-white"/>
         </div>
       </div>
-
-      {/* Cat detail modal */}
-      {selected&&<CatModal cat={selected} record={records[selected.id]||{}} photo={data.catPhotos?.[selected.id]} personName={person.name} onMark={markField} onClose={()=>setSelected(null)}/>}
-    </div>);
+      {sel&&<CatModal cat={sel} rec={recs[sel.id]||{}} ph={dat.catPhotos?.[sel.id]} name={per.name} mark={mark} close={()=>sSel(null)}/>}
+    </div>;
   }
 
-  // ── Cat detail modal ────────────────────────────────────────────
-  function CatModal({cat,record,photo,personName,onMark,onClose}){
-    const [careNotes,setCareNotes]=useState(record.careNotes||"");
-    const [medNotes, setMedNotes ]=useState(record.medNotes||"");
-
-    const toggle=(field)=>onMark(cat.id,field,!record[field]);
-    const saveNotes=()=>{onMark(cat.id,"careNotes",careNotes);onMark(cat.id,"medNotes",medNotes);};
-
-    const Check=({field,icon,label})=>(
-      <button onClick={()=>toggle(field)} className={`flex flex-col items-center gap-1 p-3 rounded-xl border-2 flex-1 transition-all ${record[field]?"border-emerald-400 bg-emerald-50":"border-slate-200 bg-white"}`}>
-        <span className="text-xl">{icon}</span>
-        <span className={`text-xs font-bold ${record[field]?"text-emerald-700":"text-slate-500"}`}>{label}</span>
-        {record[field]&&<span className="text-emerald-500 text-xs font-bold">✓</span>}
-      </button>
-    );
-
-    return(<div className="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-end" onClick={onClose}>
+  function CatModal({cat,rec,ph,name,mark,close}){
+    const [cn,sCn]=useState(rec.careNotes||"");
+    const [mn,sMn]=useState(rec.medNotes||"");
+    const tog=f=>mark(cat.id,f,!rec[f]);
+    const saveN=()=>{mark(cat.id,"careNotes",cn);mark(cat.id,"medNotes",mn);};
+    const Ck=({f,icon,label})=><button onClick={()=>tog(f)} className={`flex flex-col items-center gap-1 p-3 rounded-xl border-2 flex-1 transition-all ${rec[f]?"border-emerald-400 bg-emerald-50":"border-slate-200 bg-white"}`}><span className="text-xl">{icon}</span><span className={`text-xs font-bold ${rec[f]?"text-emerald-700":"text-slate-500"}`}>{label}</span>{rec[f]&&<span className="text-emerald-500 text-xs font-bold">\u2713</span>}</button>;
+    return <div className="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-end" onClick={close}>
       <div className="bg-white w-full rounded-t-3xl max-h-[90vh] overflow-auto" onClick={e=>e.stopPropagation()}>
-        <div className="px-5 pt-5 pb-3">
+        <div className="px-5 pt-5 pb-8">
           <div className="flex items-center gap-3 mb-4">
-            {photo?<img src={photo} alt={cat.name} className="w-14 h-14 rounded-2xl object-cover"/>:<div className="w-14 h-14 rounded-2xl bg-slate-200 flex items-center justify-center text-xl font-bold text-slate-500">#{cat.n}</div>}
-            <div className="flex-1">
-              <h3 className="text-lg font-black text-slate-800">{cat.name}</h3>
-              <p className="text-sm text-slate-400">Cat #{cat.n}</p>
-            </div>
-            <button onClick={onClose} className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold">×</button>
+            {ph?<img src={ph} alt={cat.name} className="w-14 h-14 rounded-2xl object-cover"/>:<div className="w-14 h-14 rounded-2xl bg-slate-200 flex items-center justify-center text-xl font-bold text-slate-500">#{cat.n}</div>}
+            <div className="flex-1"><h3 className="text-lg font-black text-slate-800">{cat.name}</h3><p className="text-sm text-slate-400">Cat #{cat.n}</p></div>
+            <button onClick={close} className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold">\u00d7</button>
           </div>
-
-          {/* Urgent toggle */}
-          <button onClick={()=>toggle("urgent")} className={`w-full py-2.5 rounded-xl text-sm font-bold mb-4 transition-colors ${record.urgent?"bg-red-500 text-white":"bg-red-50 text-red-500 border border-red-200"}`}>
-            {record.urgent?"⚠️ URGENT — Tap to clear":"Mark as URGENT ⚠️"}
-          </button>
-
-          {/* Checkboxes */}
+          <button onClick={()=>tog("urgent")} className={`w-full py-2.5 rounded-xl text-sm font-bold mb-4 transition-colors ${rec.urgent?"bg-red-500 text-white":"bg-red-50 text-red-500 border border-red-200"}`}>{rec.urgent?"\u26a0\ufe0f URGENT \u2014 Tap to clear":"Mark as URGENT \u26a0\ufe0f"}</button>
           <div className="grid grid-cols-3 gap-2 mb-4">
-            <Check field="am"     icon="☀️" label="AM"/>
-            <Check field="pm"     icon="🌙" label="PM"/>
-            <Check field="ate"    icon="🍽️" label="Ate"/>
-            <Check field="water"  icon="💧" label="Water"/>
-            <Check field="litter" icon="🪣" label="Litter"/>
-            <Check field="med"    icon="💊" label="Med"/>
+            <Ck f="am"     icon="\u2600\ufe0f" label="AM"/>
+            <Ck f="pm"     icon="\ud83c\udf19"  label="PM"/>
+            <Ck f="ate"    icon="\ud83c\udf7d\ufe0f" label="Food"/>
+            <Ck f="water"  icon="\ud83d\udca7"  label="Water"/>
+            <Ck f="litter" icon="\ud83e\udea3"  label="Litter"/>
+            <Ck f="med"    icon="\ud83d\udc8a"  label="Med"/>
           </div>
-
-          {/* Notes */}
           <div className="space-y-3">
-            <div>
-              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">📝 Care notes</label>
-              <textarea value={careNotes} onChange={e=>setCareNotes(e.target.value)} onBlur={saveNotes} rows={2} placeholder="Behavior, eating habits, etc." className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"/>
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">🏥 Medical observations</label>
-              <textarea value={medNotes} onChange={e=>setMedNotes(e.target.value)} onBlur={saveNotes} rows={2} placeholder="Health concerns, symptoms, etc." className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"/>
-            </div>
+            <div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">\ud83d\udcdd Care notes</label><textarea value={cn} onChange={e=>sCn(e.target.value)} onBlur={saveN} rows={2} placeholder="Behavior, eating habits\u2026" className={IC}/></div>
+            <div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">\ud83c\udfe5 Medical observations</label><textarea value={mn} onChange={e=>sMn(e.target.value)} onBlur={saveN} rows={2} placeholder="Health concerns, symptoms\u2026" className={IC}/></div>
           </div>
-
-          {record.updatedBy&&<p className="text-xs text-slate-400 mt-3 text-center">Last updated by <strong>{record.updatedBy}</strong>{record.updatedAt?" at "+fmtTime(record.updatedAt):""}</p>}
-          <div className="h-6"/>
+          {rec.updatedBy&&<p className="text-xs text-slate-400 mt-3 text-center">Updated by <strong>{rec.updatedBy}</strong>{rec.updatedAt?" at "+fmtT(rec.updatedAt):""}</p>}
         </div>
       </div>
-    </div>);
+    </div>;
   }
 
-  // ── TASKS TAB (special tasks) ───────────────────────────────────
-  function TasksTab({data,save,person}){
-    const [form,setForm]=useState(null);
-    const [newType,setNewType]=useState("");
-    const [newPerson,setNewPerson]=useState("");
-    const [newNote,setNewNote]=useState("");
-    const [flash,setFlash]=useState(null);
-    const today=todayISO();
-
-    const activePeople=Object.values(data.people||{}).filter(p=>p.active!==false);
-    const todayTasks=data.tasks.filter(t=>t.date===today);
-
-    const addTask=async()=>{
-      if(!newType||!newPerson){setFlash({ok:false,msg:"Select task type and volunteer."});return;}
-      const p=activePeople.find(x=>x.uid===newPerson);
-      const task={id:uid(),date:today,type:newType,personId:newPerson,personName:p?.name||"",note:newNote,done:false,createdAt:new Date().toISOString()};
-      await save("tasks",[...data.tasks,task]);
-      setNewType("");setNewPerson("");setNewNote("");
-      setFlash({ok:true,msg:"Task assigned!"});
-      setTimeout(()=>setFlash(null),2000);
+  function TasksTab({dat,save,per}){
+    const [nt,sNt]=useState(""),[np,sNp]=useState(""),[nn,sNn]=useState(""),[fl,sFl]=useState(null);
+    const today=tod();const ap=Object.values(dat.people||{}).filter(p=>p.active!==false);const tt=dat.tasks.filter(t=>t.date===today);
+    const add=async()=>{
+      if(!nt||!np){sFl({ok:false,msg:"Select task type and volunteer."});return;}
+      const p=ap.find(x=>x.uid===np);
+      await save("tasks",[...dat.tasks,{id:uid(),date:today,type:nt,personId:np,personName:p?.name||"",note:nn,done:false,createdAt:new Date().toISOString()}]);
+      sNt("");sNp("");sNn("");sFl({ok:true,msg:"Task assigned!"});setTimeout(()=>sFl(null),2000);
     };
-
-    const toggleDone=async(id)=>{
-      await save("tasks",data.tasks.map(t=>t.id===id?{...t,done:!t.done}:t));
-    };
-
-    const deleteTask=async(id)=>{
-      await save("tasks",data.tasks.filter(t=>t.id!==id));
-    };
-
-    return(<div className="p-4 space-y-4">
-      <h2 className="text-base font-bold text-slate-800">Special Tasks — Today</h2>
-      {flash&&<div className={`text-sm px-4 py-3 rounded-xl font-medium ${flash.ok?"bg-emerald-100 text-emerald-700":"bg-red-100 text-red-600"}`}>{flash.msg}</div>}
-
+    const tog=async id=>save("tasks",dat.tasks.map(t=>t.id===id?{...t,done:!t.done,doneAt:new Date().toISOString()}:t));
+    const del=async id=>save("tasks",dat.tasks.filter(t=>t.id!==id));
+    return <div className="p-4 space-y-4">
+      <h2 className="text-base font-bold text-slate-800">Special Tasks \u2014 Today</h2>
+      {fl&&<div className={`text-sm px-4 py-3 rounded-xl font-medium ${fl.ok?"bg-emerald-100 text-emerald-700":"bg-red-100 text-red-600"}`}>{fl.msg}</div>}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 space-y-3">
         <h3 className="font-semibold text-slate-700 text-sm">Assign a special task</h3>
-        <div>
-          <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Task Type</label>
-          <select value={newType} onChange={e=>setNewType(e.target.value)} className={IC}>
-            <option value="">— Select —</option>
-            {SPECIAL_TASKS.map(t=><option key={t} value={t}>{t}</option>)}
-          </select>
-        </div>
-        <div>
-          <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Assign to</label>
-          <select value={newPerson} onChange={e=>setNewPerson(e.target.value)} className={IC}>
-            <option value="">— Select volunteer —</option>
-            {activePeople.map(p=><option key={p.uid} value={p.uid}>{p.name}</option>)}
-          </select>
-        </div>
-        <div>
-          <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Notes (optional)</label>
-          <input value={newNote} onChange={e=>setNewNote(e.target.value)} placeholder="Additional details…" className={IC}/>
-        </div>
-        <button onClick={addTask} className="w-full bg-slate-900 text-white font-semibold py-3 rounded-xl text-sm">Assign Task</button>
+        <div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Task Type</label><select value={nt} onChange={e=>sNt(e.target.value)} className={IC}><option value="">\u2014 Select \u2014</option>{STASKS.map(t=><option key={t} value={t}>{t}</option>)}</select></div>
+        <div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Assign to</label><select value={np} onChange={e=>sNp(e.target.value)} className={IC}><option value="">\u2014 Select \u2014</option>{ap.map(p=><option key={p.uid} value={p.uid}>{p.name}</option>)}</select></div>
+        <div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Notes (optional)</label><input value={nn} onChange={e=>sNn(e.target.value)} className={IC} placeholder="Details\u2026"/></div>
+        <button onClick={add} className="w-full bg-slate-900 text-white font-semibold py-3 rounded-xl text-sm">Assign Task</button>
       </div>
-
-      {todayTasks.length===0?<Empty icon="📋" title="No special tasks today" subtitle="Assign tasks above."/>
-      :<div className="space-y-2">{todayTasks.map(t=>(
-        <div key={t.id} className={`bg-white rounded-2xl border shadow-sm p-4 ${t.done?"border-emerald-200 bg-emerald-50 opacity-70":"border-slate-100"}`}>
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <p className={`font-semibold text-sm ${t.done?"line-through text-slate-400":"text-slate-800"}`}>{t.type}</p>
-              <p className="text-xs text-slate-500 mt-0.5">→ {t.personName}</p>
-              {t.note&&<p className="text-xs text-slate-400 mt-1 italic">{t.note}</p>}
-            </div>
-            <div className="flex items-center gap-2 ml-3">
-              <button onClick={()=>toggleDone(t.id)} className={`text-xs px-2.5 py-1 rounded-full font-bold ${t.done?"bg-emerald-500 text-white":"bg-slate-100 text-slate-600"}`}>{t.done?"✓ Done":"Mark done"}</button>
-              <button onClick={()=>deleteTask(t.id)} className="text-red-300 text-lg font-bold">×</button>
-            </div>
-          </div>
-        </div>
-      ))}</div>}
-    </div>);
+      {tt.length===0?<Empty icon="\ud83d\udccb" title="No special tasks today" subtitle=""/>:tt.map(t=><div key={t.id} className={`bg-white rounded-2xl border shadow-sm p-4 ${t.done?"border-emerald-200 bg-emerald-50 opacity-70":"border-slate-100"}`}><div className="flex items-start justify-between"><div className="flex-1"><p className={`font-semibold text-sm ${t.done?"line-through text-slate-400":"text-slate-800"}`}>{t.type}</p><p className="text-xs text-slate-500 mt-0.5">\u2192 {t.personName}</p>{t.note&&<p className="text-xs text-slate-400 mt-1 italic">{t.note}</p>}</div><div className="flex items-center gap-2 ml-3"><button onClick={()=>tog(t.id)} className={`text-xs px-2.5 py-1 rounded-full font-bold ${t.done?"bg-emerald-500 text-white":"bg-slate-100 text-slate-600"}`}>{t.done?"\u2713 Done":"Mark done"}</button><button onClick={()=>del(t.id)} className="text-red-300 text-lg font-bold">\u00d7</button></div></div></div>)}
+    </div>;
   }
 
-  // ── CATS PHOTO TAB ──────────────────────────────────────────────
-  function CatsPhotoTab({data,save}){
-    const [search,setSearch]=useState("");
-    const [editing,setEditing]=useState(null);
-    const [url,setUrl]=useState("");
-
-    const filtered=CATS.filter(c=>!search||c.name.toLowerCase().includes(search.toLowerCase())||String(c.n).includes(search));
-
-    const savePhoto=async()=>{
-      const updated={...data.catPhotos,[editing.id]:url.trim()};
-      await save("catPhotos",updated);
-      setEditing(null);setUrl("");
-    };
-
-    const removePhoto=async(catId)=>{
-      const updated={...data.catPhotos};delete updated[catId];
-      await save("catPhotos",updated);
-    };
-
-    return(<div className="p-4 space-y-4">
+  function CatsTab({dat,save}){
+    const [srch,sSrch]=useState(""),[ed,sEd]=useState(null),[url,sUrl]=useState("");
+    const vis=CATS.filter(c=>!srch||c.name.toLowerCase().includes(srch.toLowerCase())||String(c.n).includes(srch));
+    const saveP=async()=>{await save("catPhotos",{...dat.catPhotos,[ed.id]:url.trim()});sEd(null);sUrl("");};
+    const remP=async id=>{const u={...dat.catPhotos};delete u[id];await save("catPhotos",u);};
+    return <div className="p-4 space-y-4">
       <h2 className="text-base font-bold text-slate-800">Cat Photos ({CATS.length} cats)</h2>
-      <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="🔍 Search cat…" className={IC}/>
-      <div className="space-y-2">
-        {filtered.map(cat=>{
-          const photo=data.catPhotos?.[cat.id];
-          return(<div key={cat.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-3 flex items-center gap-3">
-            {photo?<img src={photo} alt={cat.name} className="w-12 h-12 rounded-xl object-cover flex-shrink-0"/>:<div className="w-12 h-12 rounded-xl bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-500 flex-shrink-0">#{cat.n}</div>}
-            <div className="flex-1 min-w-0">
-              <p className="font-semibold text-sm text-slate-800">{cat.name}</p>
-              <p className="text-xs text-slate-400">{photo?"Photo added":"No photo yet"}</p>
-            </div>
-            <div className="flex gap-2">
-              <button onClick={()=>{setEditing(cat);setUrl(photo||"");}} className="text-xs text-teal-600 font-medium">{photo?"Edit":"Add"}</button>
-              {photo&&<button onClick={()=>removePhoto(cat.id)} className="text-xs text-red-400">Remove</button>}
-            </div>
-          </div>);
-        })}
+      <input value={srch} onChange={e=>sSrch(e.target.value)} placeholder="\ud83d\udd0d Search cat\u2026" className={IC}/>
+      <div className="space-y-2">{vis.map(cat=>{const ph=dat.catPhotos?.[cat.id];return <div key={cat.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-3 flex items-center gap-3">
+        {ph?<img src={ph} alt={cat.name} className="w-12 h-12 rounded-xl object-cover flex-shrink-0"/>:<div className="w-12 h-12 rounded-xl bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-500 flex-shrink-0">#{cat.n}</div>}
+        <div className="flex-1 min-w-0"><p className="font-semibold text-sm text-slate-800">{cat.name}</p><p className="text-xs text-slate-400">{ph?"Photo added":"No photo yet"}</p></div>
+        <div className="flex gap-2"><button onClick={()=>{sEd(cat);sUrl(ph||"");}} className="text-xs text-teal-600 font-medium">{ph?"Edit":"Add"}</button>{ph&&<button onClick={()=>remP(cat.id)} className="text-xs text-red-400">Remove</button>}</div>
+      </div>;})}
       </div>
-
-      {editing&&(<div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-end" onClick={()=>setEditing(null)}>
+      {ed&&<div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-end" onClick={()=>sEd(null)}>
         <div className="bg-white w-full rounded-t-3xl p-5" onClick={e=>e.stopPropagation()}>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-black text-slate-800">Photo — {editing.name}</h3>
-            <button onClick={()=>setEditing(null)} className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold">×</button>
-          </div>
+          <div className="flex items-center justify-between mb-4"><h3 className="text-lg font-black text-slate-800">Photo \u2014 {ed.name}</h3><button onClick={()=>sEd(null)} className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center font-bold">\u00d7</button></div>
           <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Photo URL</label>
-          <input value={url} onChange={e=>setUrl(e.target.value)} placeholder="https://photos.google.com/…" className={`${IC} mb-2`}/>
-          <p className="text-xs text-slate-400 mb-4">Paste the URL from Google Photos, Google Drive, Imgur, or any image hosting service.</p>
+          <input value={url} onChange={e=>sUrl(e.target.value)} placeholder="https://photos.google.com/\u2026" className={`${IC} mb-2`}/>
+          <p className="text-xs text-slate-400 mb-4">Paste URL from Google Photos, Google Drive, Imgur, etc.</p>
           {url&&<img src={url} alt="preview" className="w-full h-40 object-cover rounded-xl mb-4" onError={e=>e.target.style.display="none"}/>}
-          <button onClick={savePhoto} className="w-full bg-slate-900 text-white font-semibold py-3 rounded-xl text-sm">Save Photo</button>
+          <button onClick={saveP} className="w-full bg-slate-900 text-white font-semibold py-3 rounded-xl text-sm">Save Photo</button>
         </div>
-      </div>)}
-    </div>);
+      </div>}
+    </div>;
   }
 
-  // ── PEOPLE TAB ──────────────────────────────────────────────────
-  function PeopleTab({data,save,currentUid}){
-    const [mode,setMode]=useState("list");const [editing,setEditing]=useState(null);
-    const [form,setForm]=useState({});const [err,setErr]=useState("");const [showArchived,setShowArchived]=useState(false);
-    const peopleArr=Object.values(data.people||{});
-    const activePeople=peopleArr.filter(p=>p.active!==false);
-    const archivedPeople=peopleArr.filter(p=>p.active===false);
-    const shown=showArchived?archivedPeople:activePeople;
-    const openNew=()=>{setForm({name:"",uid:"",email:"",role:"volunteer",active:true});setEditing("new");setMode("form");setErr("");};
-    const openEdit=p=>{setForm({...p});setEditing(p);setMode("form");setErr("");};
-    const close=()=>{setMode("list");setEditing(null);setForm({});setErr("");};
-    const setF=(k,v)=>setForm(p=>({...p,[k]:v}));
-    const handleSave=async()=>{
-      if(!form.name?.trim()){setErr("Name is required.");return;}
-      if(!form.uid?.trim()){setErr("Firebase UID is required.");return;}
-      if(!form.email?.trim()){setErr("Email is required.");return;}
-      if(editing==="new"&&data.people[form.uid]){setErr("That UID already exists.");return;}
-      const updated={...data.people,[form.uid]:{...form}};
-      await save("people",updated);close();
+  function PeopleTab({dat,save,myUid}){
+    const [mode,sMode]=useState("list"),[ed,sEd]=useState(null),[form,sForm]=useState({}),[err,sErr]=useState(""),[arch,sArch]=useState(false);
+    const arr=Object.values(dat.people||{});const act=arr.filter(p=>p.active!==false);const arc=arr.filter(p=>p.active===false);const shown=arch?arc:act;
+    const openNew=()=>{sForm({name:"",uid:"",email:"",role:"volunteer",active:true});sEd("new");sMode("form");sErr("");};
+    const openEdit=p=>{sForm({...p});sEd(p);sMode("form");sErr("");};
+    const close=()=>{sMode("list");sEd(null);sForm({});sErr("");};
+    const sf=(k,v)=>sForm(p=>({...p,[k]:v}));
+    const doSave=async()=>{
+      if(!form.name?.trim()){sErr("Name required.");return;}if(!form.uid?.trim()){sErr("Firebase UID required.");return;}if(!form.email?.trim()){sErr("Email required.");return;}
+      if(ed==="new"&&dat.people[form.uid]){sErr("That UID already exists.");return;}
+      await save("people",{...dat.people,[form.uid]:{...form}});close();
     };
-    const archivePerson=async p=>{const u={...data.people,[p.uid]:{...p,active:!p.active}};await save("people",u);};
-    const deletePerson=async p=>{
-      if(p.protected){alert("This account is protected and cannot be removed here.");return;}
-      if(!window.confirm(`Remove ${p.name}? Their Firebase login still exists.`))return;
-      const u={...data.people};delete u[p.uid];await save("people",u);
-    };
-    if(mode==="form")return(<div className="p-4 space-y-4">
-      <div className="flex items-center gap-3 mb-2"><button onClick={close} className="text-teal-600 text-sm font-medium">← Back</button><h2 className="text-base font-bold text-slate-800">{editing==="new"?"Add Person":"Edit Person"}</h2></div>
+    const doArch=async p=>{await save("people",{...dat.people,[p.uid]:{...p,active:!p.active}});};
+    const doDel=async p=>{if(p.protected){alert("Protected account.");return;}if(!window.confirm(`Remove ${p.name}?`))return;const u={...dat.people};delete u[p.uid];await save("people",u);};
+    if(mode==="form")return <div className="p-4 space-y-4">
+      <div className="flex items-center gap-3 mb-2"><button onClick={close} className="text-teal-600 text-sm font-medium">\u2190 Back</button><h2 className="text-base font-bold text-slate-800">{ed==="new"?"Add Person":"Edit Person"}</h2></div>
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 space-y-3">
-        <div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Full Name *</label><input value={form.name||""} onChange={e=>setF("name",e.target.value)} className={IC} placeholder="Maria González"/></div>
-        <div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Email *</label><input type="email" value={form.email||""} onChange={e=>setF("email",e.target.value)} className={IC} placeholder="maria@email.com"/></div>
-        {editing==="new"&&<div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Firebase UID *</label><input value={form.uid||""} onChange={e=>setF("uid",e.target.value)} className={IC} placeholder="From Firebase Authentication"/><p className="text-xs text-slate-400 mt-1">Firebase Console → Authentication → Users → copy the UID.</p></div>}
-        <div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Role</label><select value={form.role||"volunteer"} onChange={e=>setF("role",e.target.value)} className={IC}><option value="volunteer">Volunteer</option><option value="coordinator">Coordinator</option></select></div>
+        <div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Full Name *</label><input value={form.name||""} onChange={e=>sf("name",e.target.value)} className={IC} placeholder="Maria Gonz\xe1lez"/></div>
+        <div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Email *</label><input type="email" value={form.email||""} onChange={e=>sf("email",e.target.value)} className={IC}/></div>
+        {ed==="new"&&<div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Firebase UID *</label><input value={form.uid||""} onChange={e=>sf("uid",e.target.value)} className={IC} placeholder="From Firebase Authentication"/><p className="text-xs text-slate-400 mt-1">Firebase Console \u2192 Authentication \u2192 Users \u2192 copy the UID.</p></div>}
+        <div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Role</label><select value={form.role||"volunteer"} onChange={e=>sf("role",e.target.value)} className={IC}><option value="volunteer">Volunteer</option><option value="coordinator">Coordinator</option></select></div>
         {err&&<div className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-xl">{err}</div>}
       </div>
-      <button onClick={handleSave} className="w-full bg-slate-900 text-white font-semibold py-4 rounded-2xl text-sm">Save Person</button>
-    </div>);
-    return(<div className="p-4 space-y-4">
+      <button onClick={doSave} className="w-full bg-slate-900 text-white font-semibold py-4 rounded-2xl text-sm">Save Person</button>
+    </div>;
+    return <div className="p-4 space-y-4">
       <div className="flex items-center justify-between"><h2 className="text-base font-bold text-slate-800">People ({shown.length})</h2><button onClick={openNew} className="bg-slate-900 text-white text-xs px-4 py-2 rounded-xl font-medium">+ Add</button></div>
-      <div className="flex rounded-xl overflow-hidden border border-slate-200">
-        <button onClick={()=>setShowArchived(false)} className={`flex-1 py-2 text-xs font-bold ${!showArchived?"bg-slate-900 text-white":"bg-white text-slate-500"}`}>Active ({activePeople.length})</button>
-        <button onClick={()=>setShowArchived(true)} className={`flex-1 py-2 text-xs font-bold ${showArchived?"bg-slate-900 text-white":"bg-white text-slate-500"}`}>Archived ({archivedPeople.length})</button>
-      </div>
-      {shown.length===0?<Empty icon="👤" title={showArchived?"No archived people":"No people yet"} subtitle=""/>
-      :shown.map(p=>(<div key={p.uid} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
-        <div className="flex items-center justify-between">
-          <div className="min-w-0">
-            <div className="font-semibold text-slate-800 flex items-center gap-1.5">{p.name}{p.uid===currentUid&&<span className="text-xs text-teal-600 font-normal">(you)</span>}{p.protected&&<span className="text-xs text-amber-600">🔒</span>}</div>
-            <div className="text-sm text-slate-400 mt-0.5 truncate">{p.email}</div>
-            <span className={`inline-block mt-1.5 text-xs px-2.5 py-0.5 rounded-full font-medium capitalize ${p.role==="coordinator"?"bg-indigo-100 text-indigo-700":"bg-slate-100 text-slate-600"}`}>{p.role}</span>
-          </div>
-          <div className="flex flex-col items-end gap-1.5 ml-3 flex-shrink-0">
-            <button onClick={()=>openEdit(p)} className="text-xs text-teal-600 font-medium">Edit</button>
-            {!p.protected&&<button onClick={()=>archivePerson(p)} className="text-xs text-slate-400">{showArchived?"Unarchive":"Archive"}</button>}
-            {!p.protected&&<button onClick={()=>deletePerson(p)} className="text-xs text-red-400">Delete</button>}
-          </div>
-        </div>
-      </div>))}
-    </div>);
+      <div className="flex rounded-xl overflow-hidden border border-slate-200"><button onClick={()=>sArch(false)} className={`flex-1 py-2 text-xs font-bold ${!arch?"bg-slate-900 text-white":"bg-white text-slate-500"}`}>Active ({act.length})</button><button onClick={()=>sArch(true)} className={`flex-1 py-2 text-xs font-bold ${arch?"bg-slate-900 text-white":"bg-white text-slate-500"}`}>Archived ({arc.length})</button></div>
+      {shown.length===0?<Empty icon="\ud83d\udc64" title={arch?"No archived people":"No people yet"} subtitle=""/>:shown.map(p=><div key={p.uid} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4"><div className="flex items-center justify-between"><div className="min-w-0"><div className="font-semibold text-slate-800 flex items-center gap-1.5">{p.name}{p.uid===myUid&&<span className="text-xs text-teal-600 font-normal">(you)</span>}{p.protected&&<span className="text-xs text-amber-600">\ud83d\udd12</span>}</div><div className="text-sm text-slate-400 mt-0.5 truncate">{p.email}</div><span className={`inline-block mt-1.5 text-xs px-2.5 py-0.5 rounded-full font-medium capitalize ${p.role==="coordinator"?"bg-indigo-100 text-indigo-700":"bg-slate-100 text-slate-600"}`}>{p.role}</span></div><div className="flex flex-col items-end gap-1.5 ml-3 flex-shrink-0"><button onClick={()=>openEdit(p)} className="text-xs text-teal-600 font-medium">Edit</button>{!p.protected&&<button onClick={()=>doArch(p)} className="text-xs text-slate-400">{arch?"Unarchive":"Archive"}</button>}{!p.protected&&<button onClick={()=>doDel(p)} className="text-xs text-red-400">Delete</button>}</div></div></div>)}
+    </div>;
   }
 
-  // ── HISTORY TAB ─────────────────────────────────────────────────
-  function HistoryTab({data,person}){
-    const [date,setDate]=useState(todayISO());
-    const [records,setRecords]=useState({});
-    const [notes,setNotes]=useState("");
-    const unsubRef=useRef(null);
-    useEffect(()=>{
-      if(unsubRef.current)unsubRef.current();
-      const unsub=db.listen(`sag_daily/${date}`,val=>setRecords(val||{}));
-      unsubRef.current=unsub;
-      db.get(`sag_daily_notes/${date}`).then(n=>setNotes(n?.notes||""));
-      return()=>{if(unsubRef.current)unsubRef.current();};
+  function HistTab({dat}){
+    const [date,sDate]=useState(tod()),[recs,sRecs]=useState({}),[notes,sNotes]=useState("");
+    const uref=useRef(null);
+    useEffect(()=>{if(uref.current)uref.current();const unsub=db.listen(`sag_daily/${date}`,v=>sRecs(v||{}));uref.current=unsub;db.get(`sag_daily_notes/${date}`).then(n=>sNotes(n?.notes||""));return()=>{if(uref.current)uref.current();};
     },[date]);
-
+    const vis=CATS.filter(c=>recs[c.id]?.am||recs[c.id]?.pm).length;
+    const urg=CATS.filter(c=>recs[c.id]?.urgent);
     const doPrint=()=>{
-      const rows=CATS.map(c=>{const r=records[c.id]||{};return`<tr style="border-bottom:1px solid #eee"><td style="padding:4px 6px;text-align:center">${c.n}</td><td style="padding:4px 6px">${c.name}${r.urgent?` <b style="color:red">⚠️</b>`:""}</td><td style="padding:4px 6px;text-align:center">${r.am?"✓":""}</td><td style="padding:4px 6px;text-align:center">${r.pm?"✓":""}</td><td style="padding:4px 6px;text-align:center">${r.ate?"✓":""}</td><td style="padding:4px 6px;text-align:center">${r.water?"✓":""}</td><td style="padding:4px 6px;text-align:center">${r.litter?"✓":""}</td><td style="padding:4px 6px;text-align:center">${r.med?"✓":""}</td><td style="padding:4px 6px;font-size:11px">${r.careNotes||""}</td><td style="padding:4px 6px;font-size:11px">${r.medNotes||""}</td></tr>`;}).join("");
-      const html=`<h2>Zaenid Michis — Care History</h2><p style="color:#666">${fmtDate(date)}</p>
-        <table style="width:100%;border-collapse:collapse;font-size:12px;margin-top:12px">
-          <thead><tr style="background:#0f172a;color:white"><th style="padding:6px">#</th><th style="padding:6px;text-align:left">Name</th><th style="padding:6px">AM</th><th style="padding:6px">PM</th><th style="padding:6px">Ate</th><th style="padding:6px">Water</th><th style="padding:6px">Litter</th><th style="padding:6px">Med</th><th style="padding:6px;text-align:left">Care Notes</th><th style="padding:6px;text-align:left">Medical Notes</th></tr></thead>
-          <tbody>${rows}</tbody>
-        </table>${notes?`<p style="margin-top:16px"><strong>General notes:</strong> ${notes}</p>`:""}`;
-      document.getElementById("printArea").innerHTML=html;window.print();
+      const rows=CATS.map(c=>{const r=recs[c.id]||{};return`<tr style="border-bottom:1px solid #eee"><td style="padding:4px 6px;text-align:center">${c.n}</td><td style="padding:4px 6px">${c.name}${r.urgent?` <b style="color:red">\u26a0\ufe0f</b>`:""}</td><td style="padding:4px;text-align:center">${r.am?"\u2713":""}</td><td style="padding:4px;text-align:center">${r.pm?"\u2713":""}</td><td style="padding:4px;text-align:center">${r.ate?"\u2713":""}</td><td style="padding:4px;text-align:center">${r.water?"\u2713":""}</td><td style="padding:4px;text-align:center">${r.litter?"\u2713":""}</td><td style="padding:4px;text-align:center">${r.med?"\u2713":""}</td><td style="padding:4px 6px;font-size:11px">${r.careNotes||""}</td><td style="padding:4px 6px;font-size:11px">${r.medNotes||""}</td></tr>`;}).join("");
+      document.getElementById("printArea").innerHTML=`<h2>Zaenid Michis \u2014 Care Report</h2><p style="color:#666">${fmtD(date)}</p><table style="width:100%;border-collapse:collapse;font-size:12px;margin-top:12px"><thead><tr style="background:#0f172a;color:white"><th>#</th><th style="text-align:left">Name</th><th>AM</th><th>PM</th><th>Ate</th><th>Water</th><th>Litter</th><th>Med</th><th style="text-align:left">Care Notes</th><th style="text-align:left">Medical Notes</th></tr></thead><tbody>${rows}</tbody></table>${notes?`<p style="margin-top:16px"><strong>General notes:</strong> ${notes}</p>`:""}`;
+      window.print();
     };
-
-    const visited=CATS.filter(c=>records[c.id]?.am||records[c.id]?.pm).length;
-    const urgents=CATS.filter(c=>records[c.id]?.urgent);
-
-    return(<div className="p-4 space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-base font-bold text-slate-800">History</h2>
-        <input type="date" value={date} onChange={e=>setDate(e.target.value)} className="border border-slate-200 rounded-xl px-3 py-1.5 text-sm focus:outline-none bg-white"/>
-      </div>
+    return <div className="p-4 space-y-4">
+      <div className="flex items-center justify-between"><h2 className="text-base font-bold text-slate-800">History</h2><input type="date" value={date} onChange={e=>sDate(e.target.value)} className="border border-slate-200 rounded-xl px-3 py-1.5 text-sm focus:outline-none bg-white"/></div>
       <div className="grid grid-cols-3 gap-2">
-        <div className="bg-white rounded-2xl border border-slate-100 p-3 text-center"><p className="text-2xl font-black text-teal-600">{visited}</p><p className="text-xs text-slate-500">Cats visited</p></div>
-        <div className="bg-white rounded-2xl border border-slate-100 p-3 text-center"><p className="text-2xl font-black text-slate-700">{CATS.length-visited}</p><p className="text-xs text-slate-500">Not checked</p></div>
-        <div className="bg-white rounded-2xl border border-slate-100 p-3 text-center"><p className={`text-2xl font-black ${urgents.length?"text-red-500":"text-emerald-500"}`}>{urgents.length}</p><p className="text-xs text-slate-500">Urgent</p></div>
+        <div className="bg-white rounded-2xl border border-slate-100 p-3 text-center"><p className="text-2xl font-black text-teal-600">{vis}</p><p className="text-xs text-slate-500">Visited</p></div>
+        <div className="bg-white rounded-2xl border border-slate-100 p-3 text-center"><p className="text-2xl font-black text-slate-700">{CATS.length-vis}</p><p className="text-xs text-slate-500">Pending</p></div>
+        <div className="bg-white rounded-2xl border border-slate-100 p-3 text-center"><p className={`text-2xl font-black ${urg.length?"text-red-500":"text-emerald-500"}`}>{urg.length}</p><p className="text-xs text-slate-500">Urgent</p></div>
       </div>
-      {urgents.length>0&&<div className="bg-red-50 border border-red-200 rounded-2xl p-3"><p className="text-red-700 text-xs font-bold mb-1">⚠️ URGENT</p>{urgents.map(c=><p key={c.id} className="text-xs text-red-600">{c.n}. {c.name}{records[c.id]?.medNotes?` — ${records[c.id].medNotes}`:""}</p>)}</div>}
+      {urg.length>0&&<div className="bg-red-50 border border-red-200 rounded-2xl p-3"><p className="text-red-700 text-xs font-bold mb-1">\u26a0\ufe0f URGENT</p>{urg.map(c=><p key={c.id} className="text-xs text-red-600">{c.n}. {c.name}{recs[c.id]?.medNotes?` \u2014 ${recs[c.id].medNotes}`:""}</p>)}</div>}
       {notes&&<div className="bg-slate-50 border border-slate-200 rounded-2xl p-3"><p className="text-xs font-semibold text-slate-500 mb-1">General notes</p><p className="text-sm text-slate-700">{notes}</p></div>}
-      <button onClick={doPrint} className="w-full bg-slate-100 text-slate-700 font-semibold py-3 rounded-xl text-sm">🖨️ Print Full Report for {fmtDate(date)}</button>
-    </div>);
+      <button onClick={doPrint} className="w-full bg-slate-100 text-slate-700 font-semibold py-3 rounded-xl text-sm">\ud83d\udda8\ufe0f Print Full Report</button>
+    </div>;
   }
 
-  // ── SETTINGS TAB ────────────────────────────────────────────────
-  function SettingsTab({data,save,authUser}){
-    const [newPass,setNewPass]=useState("");const [confirm,setConfirm]=useState("");
-    const [msg,setMsg]=useState(null);const [busy,setBusy]=useState(false);
-    const [confirmText,setConfirmText]=useState("");const [dangerMsg,setDangerMsg]=useState(null);
-    const changePassword=async()=>{
-      setMsg(null);
-      if(newPass.length<6){setMsg({ok:false,text:"Password must be at least 6 characters."});return;}
-      if(newPass!==confirm){setMsg({ok:false,text:"Passwords do not match."});return;}
-      setBusy(true);
-      try{await authUser.updatePassword(newPass);setNewPass("");setConfirm("");setMsg({ok:true,text:"Password updated!"});}
-      catch(e){if(e.code==="auth/requires-recent-login"){await FAUTH.sendPasswordResetEmail(authUser.email);setMsg({ok:true,text:"Security check required — we sent a reset email instead."});}else setMsg({ok:false,text:"Couldn't update. Try again."});}
-      setBusy(false);
-    };
-    const wipeDailyRecords=async()=>{
-      if(confirmText!=="DELETE"){setDangerMsg("Type DELETE to confirm.");return;}
-      // We can't delete all sag_daily/* easily, but we can note this limitation
-      setDangerMsg("Contact your database admin to clear historical records.");
-      setConfirmText("");
-    };
-    return(<div className="p-4 space-y-4">
+  function SetTab({dat,save,au}){
+    const [np,sNp]=useState(""),[cp,sCp]=useState(""),[msg,sMsg]=useState(null),[busy,sBusy]=useState(false);
+    const chg=async()=>{sMsg(null);if(np.length<6){sMsg({ok:false,t:"Min. 6 characters."});return;}if(np!==cp){sMsg({ok:false,t:"Passwords don't match."});return;}sBusy(true);try{await au.updatePassword(np);sNp("");sCp("");sMsg({ok:true,t:"Password updated!"});}catch(e){if(e.code==="auth/requires-recent-login"){await FAUTH.sendPasswordResetEmail(au.email);sMsg({ok:true,t:"Reset email sent \u2014 use that to change your password."});}else sMsg({ok:false,t:"Couldn't update. Try again."});}sBusy(false);};
+    return <div className="p-4 space-y-4">
       <h2 className="text-base font-bold text-slate-800">Settings</h2>
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 space-y-3">
-        <h3 className="font-semibold text-slate-700 text-sm">🔐 Change My Password</h3>
-        <div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">New password (min. 6 chars)</label><input type="password" value={newPass} onChange={e=>setNewPass(e.target.value)} className={IC} placeholder="New password"/></div>
-        <div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Confirm</label><input type="password" value={confirm} onChange={e=>setConfirm(e.target.value)} className={IC} placeholder="Repeat to confirm"/></div>
-        {msg&&<div className={`text-sm px-3 py-2 rounded-xl ${msg.ok?"bg-emerald-100 text-emerald-700":"bg-red-100 text-red-600"}`}>{msg.text}</div>}
-        <button onClick={changePassword} disabled={busy} className="w-full bg-slate-900 text-white font-semibold py-3 rounded-xl text-sm disabled:opacity-50">{busy?"Updating…":"Update Password"}</button>
+        <h3 className="font-semibold text-slate-700 text-sm">\ud83d\udd10 Change My Password</h3>
+        <div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">New password (min. 6)</label><input type="password" value={np} onChange={e=>sNp(e.target.value)} className={IC} placeholder="New password"/></div>
+        <div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Confirm</label><input type="password" value={cp} onChange={e=>sCp(e.target.value)} className={IC} placeholder="Repeat"/></div>
+        {msg&&<div className={`text-sm px-3 py-2 rounded-xl ${msg.ok?"bg-emerald-100 text-emerald-700":"bg-red-100 text-red-600"}`}>{msg.t}</div>}
+        <button onClick={chg} disabled={busy} className="w-full bg-slate-900 text-white font-semibold py-3 rounded-xl text-sm disabled:opacity-50">{busy?"Updating\u2026":"Update Password"}</button>
       </div>
-      <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4 text-sm text-amber-800 leading-relaxed">
-        <strong>💡 Adding volunteers:</strong> Create their login in Firebase Console first, then add them in the People tab using the same email and their Firebase UID.
-      </div>
-    </div>);
+      <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4 text-sm text-amber-800 leading-relaxed"><strong>\ud83d\udca1 Adding volunteers:</strong> Create their login in Firebase Console first, then add them in People using the same email and their Firebase UID.</div>
+    </div>;
   }
 
-  // ── VOLUNTEER APP ───────────────────────────────────────────────
-  function VolApp({authUser,person,data,save,onLogout}){
-    const [tab,setTab]=useState("care");
-    const [showSettings,setShowSettings]=useState(false);
-    if(showSettings)return(<div className="min-h-screen bg-slate-50 flex flex-col">
-      <header className="bg-slate-900 text-white px-4 py-3 flex items-center gap-3"><button onClick={()=>setShowSettings(false)} className="text-slate-300 text-sm">← Back</button><span className="font-bold text-sm">My Settings</span></header>
-      <main className="flex-1 p-4"><VolSettings authUser={authUser} onLogout={onLogout}/></main>
-    </div>);
-    const myTasks=data.tasks.filter(t=>t.date===todayISO()&&t.personId===person.uid);
-    const urgentCount=0; // computed in DailyCarTab
-    return(<div className="min-h-screen bg-slate-50 flex flex-col">
-      <header className="no-print bg-slate-900 text-white px-4 py-3 flex items-center justify-between sticky top-0 z-10">
-        <div className="flex items-center gap-2"><span className="text-xl">🐾</span><div><div className="font-bold text-sm">Zaenid Michis</div><div className="text-slate-400 text-xs">Hi, {person.name}!</div></div></div>
-        <div className="flex gap-2">
-          <button onClick={()=>setShowSettings(true)} className="text-slate-400 text-xs border border-slate-600 px-3 py-1.5 rounded-lg">⚙️</button>
-          <button onClick={onLogout} className="text-slate-400 text-xs border border-slate-600 px-3 py-1.5 rounded-lg">Sign out</button>
-        </div>
-      </header>
+  function VolApp({au,per,dat,save,logout}){
+    const [tab,sTab]=useState("care"),[ss,sSs]=useState(false);
+    const mt=dat.tasks.filter(t=>t.date===tod()&&t.personId===per.uid);
+    if(ss)return <div className="min-h-screen bg-slate-50 flex flex-col"><header className="bg-slate-900 text-white px-4 py-3 flex items-center gap-3"><button onClick={()=>sSs(false)} className="text-slate-300 text-sm">\u2190 Back</button><span className="font-bold text-sm">My Settings</span></header><main className="flex-1 p-4"><VolSet au={au} logout={logout}/></main></div>;
+    return <div className="min-h-screen bg-slate-50 flex flex-col">
+      <header className="no-print bg-slate-900 text-white px-4 py-3 flex items-center justify-between sticky top-0 z-10"><div className="flex items-center gap-2"><span className="text-xl">\ud83d\udc3e</span><div><div className="font-bold text-sm">Zaenid Michis</div><div className="text-slate-400 text-xs">Hi, {per.name}!</div></div></div><div className="flex gap-2"><button onClick={()=>sSs(true)} className="text-slate-400 text-xs border border-slate-600 px-3 py-1.5 rounded-lg">\u2699\ufe0f</button><button onClick={logout} className="text-slate-400 text-xs border border-slate-600 px-3 py-1.5 rounded-lg">Sign out</button></div></header>
       <main className="flex-1 overflow-auto pb-20">
-        {tab==="care"&&<DailyCarTab person={person} data={data} isCoord={false}/>}
-        {tab==="tasks"&&<VolTasks tasks={myTasks} data={data} save={save}/>}
+        {tab==="care"&&<CareTab per={per} dat={dat} isCoord={false}/>}
+        {tab==="tasks"&&<VolTasks tasks={mt} dat={dat} save={save}/>}
       </main>
       <nav className="no-print fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex z-10">
-        <button onClick={()=>setTab("care")} className={`flex-1 py-2.5 flex flex-col items-center gap-0.5 ${tab==="care"?"text-teal-600":"text-slate-400"}`}>
-          <span className="text-xl leading-none">🐾</span><span className="text-[10px] font-medium">Daily Care</span>
-        </button>
-        <button onClick={()=>setTab("tasks")} className={`flex-1 py-2.5 flex flex-col items-center gap-0.5 relative ${tab==="tasks"?"text-teal-600":"text-slate-400"}`}>
-          <span className="text-xl leading-none">📋</span><span className="text-[10px] font-medium">My Tasks</span>
-          {myTasks.filter(t=>!t.done).length>0&&<span className="absolute top-1 right-6 bg-red-500 text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center">{myTasks.filter(t=>!t.done).length}</span>}
-        </button>
+        <button onClick={()=>sTab("care")} className={`flex-1 py-2.5 flex flex-col items-center gap-0.5 ${tab==="care"?"text-teal-600":"text-slate-400"}`}><span className="text-xl leading-none">\ud83d\udc3e</span><span className="text-[10px] font-medium">Daily Care</span></button>
+        <button onClick={()=>sTab("tasks")} className={`flex-1 py-2.5 flex flex-col items-center gap-0.5 relative ${tab==="tasks"?"text-teal-600":"text-slate-400"}`}><span className="text-xl leading-none">\ud83d\udccb</span><span className="text-[10px] font-medium">My Tasks</span>{mt.filter(t=>!t.done).length>0&&<span className="absolute top-1 right-6 bg-red-500 text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center">{mt.filter(t=>!t.done).length}</span>}</button>
       </nav>
-    </div>);
+    </div>;
   }
 
-  function VolTasks({tasks,data,save}){
-    const toggle=async id=>{await save("tasks",data.tasks.map(t=>t.id===id?{...t,done:!t.done,doneAt:new Date().toISOString()}:t));};
-    return(<div className="p-4 space-y-3">
-      <h2 className="text-base font-bold text-slate-800">My Special Tasks — Today</h2>
-      {tasks.length===0?<Empty icon="✅" title="No special tasks today" subtitle="Your coordinator will assign tasks here if needed."/>
-      :tasks.map(t=><div key={t.id} onClick={()=>toggle(t.id)} className={`bg-white rounded-2xl border shadow-sm p-4 flex items-center gap-3 cursor-pointer ${t.done?"border-emerald-200 bg-emerald-50":""}`}>
-        <div className={`w-7 h-7 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${t.done?"bg-emerald-500 border-emerald-500":"border-slate-300"}`}>
-          {t.done&&<span className="text-white text-xs font-bold">✓</span>}
-        </div>
-        <div className="flex-1">
-          <p className={`font-semibold text-sm ${t.done?"line-through text-slate-400":"text-slate-800"}`}>{t.type}</p>
-          {t.note&&<p className="text-xs text-slate-400 mt-0.5">{t.note}</p>}
-          {t.done&&t.doneAt&&<p className="text-xs text-emerald-600 mt-0.5">Done at {fmtTime(t.doneAt)}</p>}
-        </div>
-      </div>)}
-    </div>);
+  function VolTasks({tasks,dat,save}){
+    const tog=async id=>save("tasks",dat.tasks.map(t=>t.id===id?{...t,done:!t.done,doneAt:new Date().toISOString()}:t));
+    return <div className="p-4 space-y-3">
+      <h2 className="text-base font-bold text-slate-800">My Special Tasks \u2014 Today</h2>
+      {tasks.length===0?<Empty icon="\u2705" title="No special tasks today" subtitle="Your coordinator will assign tasks here if needed."/>:tasks.map(t=><div key={t.id} onClick={()=>tog(t.id)} className={`bg-white rounded-2xl border shadow-sm p-4 flex items-center gap-3 cursor-pointer ${t.done?"border-emerald-200 bg-emerald-50":""}`}><div className={`w-7 h-7 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${t.done?"bg-emerald-500 border-emerald-500":"border-slate-300"}`}>{t.done&&<span className="text-white text-xs font-bold">\u2713</span>}</div><div className="flex-1"><p className={`font-semibold text-sm ${t.done?"line-through text-slate-400":"text-slate-800"}`}>{t.type}</p>{t.note&&<p className="text-xs text-slate-400 mt-0.5">{t.note}</p>}{t.done&&t.doneAt&&<p className="text-xs text-emerald-600 mt-0.5">Done at {fmtT(t.doneAt)}</p>}</div></div>)}
+    </div>;
   }
 
-  function VolSettings({authUser,onLogout}){
-    const [np,setNp]=useState("");const [cp,setCp]=useState("");const [msg,setMsg]=useState(null);const [busy,setBusy]=useState(false);
-    const change=async()=>{
-      setMsg(null);if(np.length<6){setMsg({ok:false,text:"Min. 6 characters."});return;}if(np!==cp){setMsg({ok:false,text:"Passwords don't match."});return;}
-      setBusy(true);try{await authUser.updatePassword(np);setNp("");setCp("");setMsg({ok:true,text:"Password updated!"});}catch(e){if(e.code==="auth/requires-recent-login"){await FAUTH.sendPasswordResetEmail(authUser.email);setMsg({ok:true,text:"Reset email sent — use that to change your password."});}else setMsg({ok:false,text:"Couldn't update. Try again."});}setBusy(false);
-    };
-    return(<div className="space-y-4">
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 space-y-3">
-        <h3 className="font-semibold text-slate-700 text-sm">🔐 Change My Password</h3>
-        <div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">New password</label><input type="password" value={np} onChange={e=>setNp(e.target.value)} className={IC} placeholder="Min. 6 characters"/></div>
-        <div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Confirm</label><input type="password" value={cp} onChange={e=>setCp(e.target.value)} className={IC} placeholder="Repeat"/></div>
-        {msg&&<div className={`text-sm px-3 py-2 rounded-xl ${msg.ok?"bg-emerald-100 text-emerald-700":"bg-red-100 text-red-600"}`}>{msg.text}</div>}
-        <button onClick={change} disabled={busy} className="w-full bg-slate-900 text-white font-semibold py-3 rounded-xl text-sm disabled:opacity-50">{busy?"Updating…":"Update Password"}</button>
-      </div>
-      <button onClick={onLogout} className="w-full text-slate-500 text-sm font-medium py-2">Sign out</button>
-    </div>);
+  function VolSet({au,logout}){
+    const [np,sNp]=useState(""),[cp,sCp]=useState(""),[msg,sMsg]=useState(null),[busy,sBusy]=useState(false);
+    const chg=async()=>{sMsg(null);if(np.length<6){sMsg({ok:false,t:"Min. 6 characters."});return;}if(np!==cp){sMsg({ok:false,t:"Don't match."});return;}sBusy(true);try{await au.updatePassword(np);sNp("");sCp("");sMsg({ok:true,t:"Password updated!"});}catch(e){if(e.code==="auth/requires-recent-login"){await FAUTH.sendPasswordResetEmail(au.email);sMsg({ok:true,t:"Reset email sent."});}else sMsg({ok:false,t:"Couldn't update."});}sBusy(false);};
+    return <div className="space-y-4"><div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 space-y-3"><h3 className="font-semibold text-slate-700 text-sm">\ud83d\udd10 Change My Password</h3><div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">New password</label><input type="password" value={np} onChange={e=>sNp(e.target.value)} className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 bg-white" placeholder="Min. 6 characters"/></div><div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Confirm</label><input type="password" value={cp} onChange={e=>sCp(e.target.value)} className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 bg-white" placeholder="Repeat"/></div>{msg&&<div className={`text-sm px-3 py-2 rounded-xl ${msg.ok?"bg-emerald-100 text-emerald-700":"bg-red-100 text-red-600"}`}>{msg.t}</div>}<button onClick={chg} disabled={busy} className="w-full bg-slate-900 text-white font-semibold py-3 rounded-xl text-sm disabled:opacity-50">{busy?"Updating\u2026":"Update Password"}</button></div><button onClick={logout} className="w-full text-slate-500 text-sm font-medium py-2">Sign out</button></div>;
   }
 
-  // ── Shared ──────────────────────────────────────────────────────
-  const IC="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 bg-white";
-  function Empty({icon,title,subtitle}){return(<div className="text-center py-14"><div className="text-5xl mb-3">{icon}</div><p className="font-semibold text-slate-700">{title}</p>{subtitle&&<p className="text-sm text-slate-400 mt-1">{subtitle}</p>}</div>);}
+  function Empty({icon,title,subtitle}){return <div className="text-center py-14"><div className="text-5xl mb-3">{icon}</div><p className="font-semibold text-slate-700">{title}</p>{subtitle&&<p className="text-sm text-slate-400 mt-1">{subtitle}</p>}</div>;}
 
-  // ── Render ──────────────────────────────────────────────────────
   ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
 </script>
 </body>
