@@ -1,11 +1,16 @@
-const VERSION='zaenid-michis-v11';
+const VERSION='zaenid-michis-v12';
 const STATIC=['./','./index.html','./manifest.json','./icon-192.png','./icon-512.png'];
 const EXTERNAL=[
   'https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js',
   'https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js',
-  'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js'
+  'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js',
+  'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js'
 ];
 const REPLACEMENTS=[
+  ["<script src=\"https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js\"></script>",
+   "<script src=\"https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js\"></script><script src=\"https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js\"></script>"],
+  ["const FDB=firebase.database(), AUTH=firebase.auth();",
+   "const FDB=firebase.database(), AUTH=firebase.auth(), FST=firebase.storage();"],
   ["async function durableWrite(op,path,value){localApply(path,op==='remove'?undefined:value,op==='patch');if(!navigator.onLine){queue(op,path,value);return}try{await Promise.race([netWrite(op,path,value),new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),5000))])}catch{queue(op,path,value)}}",
    "function durableWrite(op,path,value){localApply(path,op==='remove'?undefined:value,op==='patch');if(!navigator.onLine){queue(op,path,value);return Promise.resolve()}Promise.race([netWrite(op,path,value),new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),5000))]).catch(()=>queue(op,path,value));return Promise.resolve()}"],
   ["online:navigator.onLine,unsubs:[],viewUnsubs:[]};",
@@ -30,6 +35,12 @@ const REPLACEMENTS=[
    ".task-actions{display:flex;gap:7px;margin-top:10px}.task-x{margin-left:auto;width:56px;height:56px;min-width:56px;border:0;border-radius:16px;background:#fee2e2;color:#b91c1c;font-size:34px;line-height:1;font-weight:700;display:grid;place-items:center;touch-action:manipulation;-webkit-user-select:none;user-select:none}.task-x:active{transform:scale(.94);background:#fecaca}"],
   [".login .card{padding:22px;box-shadow:0 24px 70px #0006}",
    ".login .card{padding:22px;box-shadow:0 24px 70px #0006}.login input{min-height:48px}"],
+  ["function openPhotoModal(){const cat=CATS.find(c=>c.id===state.photoCat);if(!cat)return;const ph=state.catPhotos[cat.id]||'';const modal=document.createElement('div');modal.className='modalbg';modal.id='photoModal';modal.innerHTML=`<div class=\"modal\"><div class=\"modalhead\"><h3>Photo — ${esc(cat.name)}</h3><button class=\"close\" data-act=\"closePhoto\">×</button></div><div class=\"field\"><label>Direct Photo URL</label><input id=\"photoUrl\" class=\"input\" value=\"${esc(ph)}\" placeholder=\"https://…\"></div><div class=\"muted mb12\">Use a direct image URL. Some Google Photos/Drive share links do not work as image links.</div><button class=\"btn primary w100\" data-act=\"savePhoto\">Save Photo</button></div>`;document.body.appendChild(modal);modal.addEventListener('click',e=>{if(e.target===modal){state.photoCat=null;modal.remove()}else handleClick(e)})}",
+   "function openPhotoModal(){const cat=CATS.find(c=>c.id===state.photoCat);if(!cat)return;const ph=state.catPhotos[cat.id]||'';const modal=document.createElement('div');modal.className='modalbg';modal.id='photoModal';modal.innerHTML=`<div class=\"modal\"><div class=\"modalhead\"><h3>Photo — ${esc(cat.name)}</h3><button class=\"close\" data-act=\"closePhoto\">×</button></div>${ph?`<div style=\"text-align:center;margin-bottom:14px\"><img src=\"${esc(ph)}\" alt=\"${esc(cat.name)}\" style=\"width:140px;height:140px;object-fit:cover;border-radius:18px;border:1px solid var(--line)\"></div>`:''}<div class=\"field\"><label>Select Photo</label><input id=\"photoFile\" class=\"input\" type=\"file\" accept=\"image/*\"></div><div class=\"muted mb12\">On a phone, choose a photo from the gallery or camera. On a computer, choose an image file.</div><div id=\"photoMsg\"></div><button class=\"btn primary w100\" data-act=\"savePhoto\">${ph?'Replace Photo':'Upload Photo'}</button></div>`;document.body.appendChild(modal);modal.addEventListener('click',e=>{if(e.target===modal){state.photoCat=null;modal.remove()}else handleClick(e)})}"],
+  ["async function savePhoto(){const url=document.getElementById('photoUrl').value.trim(),id=state.photoCat;if(url)await db.set(`sag_cat_photos/${id}`,url);else await db.remove(`sag_cat_photos/${id}`);state.photoCat=null;document.getElementById('photoModal')?.remove();render()}",
+   "async function savePhoto(){const file=document.getElementById('photoFile')?.files?.[0],id=state.photoCat,msg=document.getElementById('photoMsg');if(!file){if(msg)msg.innerHTML='<div class=\"msg err\">Select a photo first.</div>';return}if(!file.type.startsWith('image/')){if(msg)msg.innerHTML='<div class=\"msg err\">Please choose an image file.</div>';return}if(!navigator.onLine){if(msg)msg.innerHTML='<div class=\"msg err\">Internet is required to upload a photo.</div>';return}const btn=document.querySelector('[data-act=\"savePhoto\"]');if(btn){btn.disabled=true;btn.textContent='Uploading…'}try{const ref=FST.ref(`cat_photos/${id}`);await ref.put(file,{contentType:file.type||'image/jpeg'});const url=await ref.getDownloadURL();await db.set(`sag_cat_photos/${id}`,url);state.photoCat=null;document.getElementById('photoModal')?.remove();render()}catch(e){console.error(e);if(msg)msg.innerHTML='<div class=\"msg err\">Could not upload the photo. Check Firebase Storage permissions.</div>';if(btn){btn.disabled=false;btn.textContent='Upload Photo'}}}async function removePhoto(id){if(!confirm('Remove photo?'))return;db.remove(`sag_cat_photos/${id}`);if(navigator.onLine)FST.ref(`cat_photos/${id}`).delete().catch(()=>{})}"],
+  ["if(t.dataset.photoRemove){if(confirm('Remove photo?'))db.remove(`sag_cat_photos/${t.dataset.photoRemove}`);return}",
+   "if(t.dataset.photoRemove){removePhoto(t.dataset.photoRemove);return}"],
   ["function render(){if(state.authState==='loading')",
    "function render(){document.querySelectorAll('.modalbg').forEach(el=>el.remove());if(state.authState==='loading')"],
   ["function openCatModal(){const cat=",
