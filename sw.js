@@ -1,5 +1,5 @@
-const VERSION='zaenid-michis-v19';
-const STATIC=['./','./index.html','./manifest.json','./icon-192.png','./icon-512.png'];
+const VERSION='zaenid-michis-v20';
+const STATIC=['./','./index.html','./manifest.json','./launcher.html','./icon-192.png','./icon-512.png'];
 const EXTERNAL=[
   'https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js',
   'https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js',
@@ -30,13 +30,13 @@ const REPLACEMENTS=[
   ["if(t.dataset.taskDel){deleteTask(t.dataset.taskDel);return}",
    "if(t.dataset.taskDel){const card=t.closest('.task');if(card)card.remove();deleteTask(t.dataset.taskDel);return}"],
   [".task-actions{display:flex;gap:7px;margin-top:10px}",
-   ".task-actions{display:flex;gap:7px;margin-top:10px}.task-x{margin-left:auto;width:56px;height:56px;min-width:56px;border:0;border-radius:16px;background:#fee2e2;color:#b91c1c;font-size:34px;line-height:1;font-weight:700;display:grid;place-items:center;touch-action:manipulation;-webkit-user-select:none;user-select:none}.task-x:active{transform:scale(.94);background:#fecaca}"],
+   ".task-actions{display:flex;gap:7px;margin-top:10px}.task-x{margin-left:auto;width:56px;height:56px;min-width:56px;border:0;border-radius:16px;background:#fee2e2;color:#b91c1c;font-size:34px;line-height:1;font-weight:700;display:grid;place-items:center;touch-action:none;-webkit-user-select:none;user-select:none}.task-x:active{transform:scale(.94);background:#fecaca}"],
   [".login .card{padding:22px;box-shadow:0 24px 70px #0006}",
    ".login .card{padding:22px;box-shadow:0 24px 70px #0006}.login input{min-height:48px}"],
   ["<body><h2>Zaenid Michis — Care Report</h2>",
-   "<body><button id=\"reportBack\" onclick=\"if(window.opener){window.opener.focus()}window.close()\" style=\"display:none;border:0;border-radius:10px;background:#0f172a;color:white;padding:10px 14px;font-weight:700;margin-bottom:14px\">← Back to Zaenid Michis</button><h2>Zaenid Michis — Care Report</h2>"],
+   "<body><button id=\"reportBack\" onclick=\"if(window.opener&&!window.opener.closed){window.opener.focus();window.close();return}else{location.href='./'}\" style=\"display:inline-block;border:0;border-radius:10px;background:#0f172a;color:white;padding:10px 14px;font-weight:700;margin-bottom:14px\">← Back to Zaenid Michis</button><h2>Zaenid Michis — Care Report</h2>"],
   ["<script>window.onload=()=>window.print()<\\/script>",
-   "<script>window.onload=()=>window.print();window.onafterprint=()=>setTimeout(()=>{if(window.opener){window.opener.focus()}window.close();setTimeout(()=>{const b=document.getElementById('reportBack');if(b)b.style.display='inline-block'},300)},250)<\\/script>"],
+   "<script>window.onload=()=>window.print();window.onafterprint=()=>setTimeout(()=>{if(window.opener&&!window.opener.closed){window.opener.focus();window.close()}},250)<\\/script>"],
   ["function openPhotoModal(){const cat=CATS.find(c=>c.id===state.photoCat);if(!cat)return;const ph=state.catPhotos[cat.id]||'';const modal=document.createElement('div');modal.className='modalbg';modal.id='photoModal';modal.innerHTML=`<div class=\"modal\"><div class=\"modalhead\"><h3>Photo — ${esc(cat.name)}</h3><button class=\"close\" data-act=\"closePhoto\">×</button></div><div class=\"field\"><label>Direct Photo URL</label><input id=\"photoUrl\" class=\"input\" value=\"${esc(ph)}\" placeholder=\"https://…\"></div><div class=\"muted mb12\">Use a direct image URL. Some Google Photos/Drive share links do not work as image links.</div><button class=\"btn primary w100\" data-act=\"savePhoto\">Save Photo</button></div>`;document.body.appendChild(modal);modal.addEventListener('click',e=>{if(e.target===modal){state.photoCat=null;modal.remove()}else handleClick(e)})}",
    "function openPhotoModal(){const cat=CATS.find(c=>c.id===state.photoCat);if(!cat)return;const ph=state.catPhotos[cat.id]||'';const modal=document.createElement('div');modal.className='modalbg';modal.id='photoModal';modal.innerHTML=`<div class=\"modal\"><div class=\"modalhead\"><h3>Photo — ${esc(cat.name)}</h3><button class=\"close\" data-act=\"closePhoto\">×</button></div>${ph?`<div style=\"text-align:center;margin-bottom:14px\"><img src=\"${esc(ph)}\" alt=\"${esc(cat.name)}\" style=\"width:140px;height:140px;object-fit:cover;border-radius:18px;border:1px solid var(--line)\"></div>`:''}<div class=\"field\"><label>Select Photo</label><input id=\"photoFile\" class=\"input\" type=\"file\" accept=\"image/*\"></div><div class=\"muted mb12\">Choose a photo from the phone gallery/camera or from the computer. The app reduces it automatically before saving.</div><div id=\"photoMsg\"></div><button class=\"btn primary w100\" data-act=\"savePhoto\">${ph?'Replace Photo':'Save Photo'}</button></div>`;document.body.appendChild(modal);modal.addEventListener('click',e=>{if(e.target===modal){state.photoCat=null;modal.remove()}else handleClick(e)})}"],
   ["async function savePhoto(){const url=document.getElementById('photoUrl').value.trim(),id=state.photoCat;if(url)await db.set(`sag_cat_photos/${id}`,url);else await db.remove(`sag_cat_photos/${id}`);state.photoCat=null;document.getElementById('photoModal')?.remove();render()}",
@@ -56,7 +56,10 @@ const REPLACEMENTS=[
   ["document.getElementById('photoModal')?.remove()",
    "document.querySelectorAll('.modalbg').forEach(el=>el.remove())"],
   ["document.getElementById('personModal')?.remove()",
-   "document.querySelectorAll('.modalbg').forEach(el=>el.remove())"]
+   "document.querySelectorAll('.modalbg').forEach(el=>el.remove())"],
+  ["function bindClicks(){app.onclick=handleClick;const cs=document.getElementById('catSearch');cs?.addEventListener('input',e=>{state.search=e.target.value;render()});const hd=document.getElementById('histDate');hd?.addEventListener('change',e=>{state.date=e.target.value;bindDaily();render()})}",
+   "function bindClicks(){app.onclick=handleClick;app.querySelectorAll('[data-task-del]').forEach(btn=>{btn.onpointerdown=e=>{e.preventDefault();e.stopPropagation();const key=btn.dataset.taskDel;if(!key||btn.dataset.busy==='1')return;btn.dataset.busy='1';btn.disabled=true;deleteTask(key)};btn.onclick=e=>{e.preventDefault();e.stopPropagation()}});const cs=document.getElementById('catSearch');cs?.addEventListener('input',e=>{state.search=e.target.value;render()});const hd=document.getElementById('histDate');hd?.addEventListener('change',e=>{state.date=e.target.value;bindDaily();render()})}"
+  ]
 ];
 function patchedHtml(text){for(const [from,to] of REPLACEMENTS)if(text.includes(from))text=text.replace(from,to);return text}
 async function cachePatchedIndex(cache){try{const r=await fetch('./index.html',{cache:'reload'});const text=patchedHtml(await r.text());const response=new Response(text,{status:200,headers:{'Content-Type':'text/html; charset=utf-8'}});await cache.put('./index.html',response.clone());await cache.put('./',response)}catch{}}
