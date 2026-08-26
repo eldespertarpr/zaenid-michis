@@ -1,0 +1,31 @@
+name: Patch Pending Care v19
+on:
+  push:
+    branches: [fix-pending-pm-threshold]
+    paths:
+      - 'scripts/patch-pending-v19.js'
+      - '.github/workflows/patch-pending-v19.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix-pending-pm-threshold
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Apply guarded patch
+        run: node scripts/patch-pending-v19.js
+      - name: Validate worker syntax
+        run: node --check sw.js
+      - name: Commit only sw.js
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add sw.js
+          git diff --cached --quiet && exit 0
+          git commit -m 'Fix Pending Care PM threshold in core worker'
+          git push origin fix-pending-pm-threshold
