@@ -14,8 +14,8 @@
   const openApp=()=>location.replace('./?home=1');
   if(!('serviceWorker' in navigator)){openApp();return}
   try{
-    const target=new URL('./sw-v22.js',location.href).href;
-    const reg=await navigator.serviceWorker.register('./sw-v22.js',{scope:'./',updateViaCache:'none'});
+    const target=new URL('./sw-v23.js',location.href).href;
+    const reg=await navigator.serviceWorker.register('./sw-v23.js',{scope:'./',updateViaCache:'none'});
     try{await reg.update()}catch{}
     const isTarget=()=>navigator.serviceWorker.controller?.scriptURL===target;
     if(!isTarget()){
