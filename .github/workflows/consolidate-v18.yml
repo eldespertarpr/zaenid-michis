@@ -1,3 +1,4 @@
+# one-time consolidation test
 name: Consolidate v18
 on:
   push:
