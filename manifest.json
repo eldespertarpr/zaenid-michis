@@ -1,9 +1,9 @@
 {
-  "id": "./",
+  "id": "./?app=zaenid-v16",
   "name": "Zaenid Michis",
   "short_name": "Michis",
   "description": "Cat care and volunteer task manager with offline support.",
-  "start_url": "./",
+  "start_url": "./?app=zaenid-v16",
   "scope": "./",
   "display": "standalone",
   "display_override": ["standalone", "minimal-ui"],
