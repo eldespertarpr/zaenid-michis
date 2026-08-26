@@ -16,5 +16,16 @@ REPLACEMENTS.push([
   "id=\"reportBack\" onclick=\"if(window.opener&&!window.opener.closed){window.opener.focus();window.close();return}else{location.href='./'}\" style=\"display:inline-block;"
 ]);
 
+// Pending Care: AM care remains the active requirement until 3:00 PM.
+// From 3:00 PM onward, PM is also required.
+REPLACEMENTS.push([
+  "const needsPm=new Date().getHours()>=12;",
+  "const needsPm=new Date().getHours()>=15;"
+]);
+REPLACEMENTS.push([
+  "const needsPm=state.date!==localDate()||new Date().getHours()>=12;",
+  "const needsPm=state.date!==localDate()||new Date().getHours()>=15;"
+]);
+
 // Cache the launcher too, so the installed app can start offline after the first successful install.
 self.addEventListener('install',event=>{event.waitUntil(caches.open(VERSION).then(cache=>Promise.allSettled([cache.add('./launcher.html'),cache.add('./sw-v18.js')])))});
