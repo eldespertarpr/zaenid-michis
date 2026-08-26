@@ -1,4 +1,4 @@
-const VERSION='zaenid-michis-v13';
+const VERSION='zaenid-michis-v14';
 const STATIC=['./','./index.html','./manifest.json','./icon-192.png','./icon-512.png'];
 const EXTERNAL=[
   'https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js',
@@ -10,6 +10,9 @@ const REPLACEMENTS=[
    "function durableWrite(op,path,value){localApply(path,op==='remove'?undefined:value,op==='patch');if(!navigator.onLine){queue(op,path,value);return Promise.resolve()}Promise.race([netWrite(op,path,value),new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),5000))]).catch(()=>queue(op,path,value));return Promise.resolve()}"],
   ["online:navigator.onLine,unsubs:[],viewUnsubs:[]};",
    "online:navigator.onLine,deletingTasks:{},unsubs:[],viewUnsubs:[]};"],
+  ["function localDate(d=new Date()){",
+   "function updatePendingCareBanner(){document.getElementById('pendingCareAlert')?.remove();if(state.tab!=='care'||state.date!==localDate())return;const pending=CATS.filter(c=>{const r=state.daily[c.id]||{};return !(r.am&&r.pm&&r.ate&&r.water&&r.litter)});if(!pending.length)return;const toolbar=document.querySelector('.toolbar');if(!toolbar)return;const box=document.createElement('button');box.id='pendingCareAlert';box.type='button';box.style.cssText='width:100%;border:1px solid #f59e0b;background:#fffbeb;color:#92400e;border-radius:12px;padding:10px 12px;margin-top:9px;font-weight:800;text-align:left';box.textContent=`⚠️ ${pending.length} ${pending.length===1?'cat still needs':'cats still need'} care today — View pending`;box.onclick=()=>{state.filter='pending';render()};toolbar.appendChild(box)}function localDate(d=new Date()){"
+  ],
   ["if(state.filter==='pending'&&r.am&&r.pm)return false;return true",
    "if(state.filter==='pending'&&r.am&&r.pm&&r.ate&&r.water&&r.litter)return false;if(state.filter==='meds'&&!(r.medRequired||r.med||r.medNotes))return false;return true"],
   ["[['all','All 128'],['urgent','⚠️ Urgent'],['pending','○ Pending']]",
@@ -37,7 +40,7 @@ const REPLACEMENTS=[
   ["if(t.dataset.photoRemove){if(confirm('Remove photo?'))db.remove(`sag_cat_photos/${t.dataset.photoRemove}`);return}",
    "if(t.dataset.photoRemove){removePhoto(t.dataset.photoRemove);return}"],
   ["function render(){if(state.authState==='loading')",
-   "function render(){document.querySelectorAll('.modalbg').forEach(el=>el.remove());if(state.authState==='loading')"],
+   "function render(){document.querySelectorAll('.modalbg').forEach(el=>el.remove());setTimeout(updatePendingCareBanner,0);if(state.authState==='loading')"],
   ["function openCatModal(){const cat=",
    "function openCatModal(){document.querySelectorAll('.modalbg').forEach(el=>el.remove());const cat="],
   ["function openPhotoModal(){const cat=",
