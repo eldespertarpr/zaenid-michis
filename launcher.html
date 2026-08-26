@@ -14,15 +14,19 @@
   const openApp=()=>location.replace('./?home=1');
   if(!('serviceWorker' in navigator)){openApp();return}
   try{
+    const target=new URL('./sw-v18.js',location.href).href;
     const reg=await navigator.serviceWorker.register('./sw-v18.js',{scope:'./',updateViaCache:'none'});
     try{await reg.update()}catch{}
-    await navigator.serviceWorker.ready;
-    if(!navigator.serviceWorker.controller){
+    const isTarget=()=>navigator.serviceWorker.controller?.scriptURL===target;
+    if(!isTarget()){
       await new Promise(resolve=>{
         let done=false;
         const finish=()=>{if(done)return;done=true;resolve()};
-        navigator.serviceWorker.addEventListener('controllerchange',finish,{once:true});
-        setTimeout(finish,2500);
+        const check=()=>{if(isTarget())finish()};
+        navigator.serviceWorker.addEventListener('controllerchange',check);
+        const candidate=reg.installing||reg.waiting;
+        if(candidate)candidate.addEventListener('statechange',check);
+        setTimeout(finish,4000);
       });
     }
     openApp();
