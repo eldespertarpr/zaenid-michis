@@ -30,6 +30,11 @@ REPLACEMENTS.push([
 ]);
 
 REPLACEMENTS.push([
+  "window.addEventListener('online',()=>{state.online=true;flushQueue();renderStatus()});",
+  "window.addEventListener('online',()=>{state.online=true;if(state.user?.offline){location.reload();return}flushQueue();renderStatus()});"
+]);
+
+REPLACEMENTS.push([
   "AUTH.onAuthStateChanged(async user=>{cleanup(state.unsubs);cleanup(state.viewUnsubs);state.user=user;if(!user){state.authState='out';state.person=null;render();return}state.authState='in';const raw=await db.get('sag_people');state.people=mergePeople(raw);const p=state.people[user.uid];if(!p)state.person={notReg:true,email:user.email};else if(p.active===false)state.person={deact:true,email:user.email};else state.person={...p,uid:user.uid,email:p.email||user.email};bindCore();bindDaily();render();if(navigator.onLine)flushQueue()});",
   "AUTH.onAuthStateChanged(async user=>{cleanup(state.unsubs);cleanup(state.viewUnsubs);state.user=user;if(!user){if(!navigator.onLine){const saved=readOfflineSession();if(saved&&saved.uid&&saved.person){state.authState='in';state.user={uid:saved.uid,email:saved.email||'',offline:true};state.people=mergePeople(readCache('sag_people'));state.person={...saved.person,uid:saved.uid,email:saved.person.email||saved.email||''};state.catPhotos=readCache('sag_cat_photos')||{};state.tasks=normalizeTasks(readCache('sag_tasks'));state.daily=readCache(`sag_daily/${state.date}`)||{};const dn=readCache(`sag_daily_notes/${state.date}`);state.dailyNotes=dn?.notes||'';bindCore();bindDaily();render();return}}state.authState='out';state.person=null;render();return}state.authState='in';const raw=await db.get('sag_people');state.people=mergePeople(raw);const p=state.people[user.uid];if(!p)state.person={notReg:true,email:user.email};else if(p.active===false)state.person={deact:true,email:user.email};else state.person={...p,uid:user.uid,email:p.email||user.email};if(state.person&&!state.person.notReg&&!state.person.deact)saveOfflineSession({uid:user.uid,email:user.email||'',person:state.person,at:Date.now()});bindCore();bindDaily();render();if(navigator.onLine)flushQueue()});"
 ]);
